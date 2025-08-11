@@ -39,11 +39,11 @@ const VisitUs = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">First Service</span>
-                  <span>7:00 AM - 9:00 AM</span>
+                  <span>9:00 AM - 2:00 PM</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold">Second Service</span>
-                  <span>9:30 AM - 11:30 AM</span>
+                  <span className="font-semibold">Jesus The Healer Service</span>
+                  <span>2:30 PM - 6:00 PM</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">Third Service</span>
@@ -61,12 +61,12 @@ const VisitUs = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold">Tuesday Prayer</span>
-                  <span>6:00 PM - 8:00 PM</span>
+                  <span className="font-semibold">Monday House ofPrayer</span>
+                  <span>5:30 PM - 7:30 PM</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold">Thursday Bible Study</span>
-                  <span>6:00 PM - 8:00 PM</span>
+                  <span className="font-semibold">Wednesday WordFest Service</span>
+                  <span>5:00 PM - 8:30 PM</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">Saturday Youth</span>
