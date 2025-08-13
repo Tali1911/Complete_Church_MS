@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Navigation } from "@/components/Navigation";
 import { Calendar, Clock, DollarSign, Users, BookOpen, Star, Play, Lock } from "lucide-react";
 
 interface Course {
@@ -83,7 +84,14 @@ const mockCourses: Course[] = [
 ];
 
 const PropheticSchool = () => {
-  const [isAuthenticated] = useState(false); // Mock - will be connected to real auth later
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Check authentication status from localStorage
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole');
+    const userEmail = localStorage.getItem('userEmail');
+    setIsAuthenticated(!!userRole && !!userEmail);
+  }, []);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courses] = useState(mockCourses);
 
@@ -115,7 +123,8 @@ const PropheticSchool = () => {
 
   return (
     <AuthGuard isAuthenticated={isAuthenticated}>
-      <div className="min-h-screen bg-background py-8">
+      <Navigation />
+      <div className="min-h-screen bg-background py-8 pt-28">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <div className="text-center mb-8">

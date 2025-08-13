@@ -26,7 +26,7 @@ export const LatestSermon = () => {
               <div className="flex flex-wrap gap-6 text-gray-300">
                 <div className="flex items-center">
                   <User className="h-5 w-5 mr-2" />
-                  <span className="font-medium">Pastor Timothy Kitui</span>
+                  <span className="font-medium">Pastor Steve</span>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 mr-2" />

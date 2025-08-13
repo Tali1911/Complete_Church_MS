@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { ProgressTracker, defaultSteps } from "@/components/shared/ProgressTracker";
 import { ReadingModule } from "@/components/shared/ReadingModule";
 import { TestInterface } from "@/components/shared/TestInterface";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Navigation } from "@/components/Navigation";
 import { Award, Download } from "lucide-react";
 
 const baptismTopics = [
@@ -119,7 +120,14 @@ const baptismQuestions = [
 ];
 
 const Baptism = () => {
-  const [isAuthenticated] = useState(false); // Mock - will be connected to real auth later
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Check authentication status from localStorage
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole');
+    const userEmail = localStorage.getItem('userEmail');
+    setIsAuthenticated(!!userRole && !!userEmail);
+  }, []);
   const [currentStage, setCurrentStage] = useState<"reading" | "test" | "complete">("reading");
   const [readingTopics, setReadingTopics] = useState(baptismTopics);
   const [testScore, setTestScore] = useState<number | null>(null);
@@ -174,7 +182,8 @@ const Baptism = () => {
 
   return (
     <AuthGuard isAuthenticated={isAuthenticated}>
-      <div className="min-h-screen bg-background py-8">
+      <Navigation />
+      <div className="min-h-screen bg-background py-8 pt-28">
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Header */}
           <div className="text-center mb-8">

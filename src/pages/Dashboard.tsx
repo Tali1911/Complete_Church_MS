@@ -13,18 +13,34 @@ import {
   Bell,
   Heart,
   BookOpen,
-  UserCheck
+  UserCheck,
+  Monitor,
+  Shield,
+  Activity,
+  Ticket
 } from "lucide-react";
 import { AttendanceTracker } from "@/components/dashboard/AttendanceTracker";
 import { FinancialContributions } from "@/components/dashboard/FinancialContributions";
 import { ReportsOverview } from "@/components/dashboard/ReportsOverview";
 import { MyGiving } from "@/components/dashboard/MyGiving";
 import { MyEvents } from "@/components/dashboard/MyEvents";
+import { SundaySchoolDashboard } from "@/components/dashboard/SundaySchoolDashboard";
+import { TeacherInterface } from "@/components/dashboard/TeacherInterface";
+import { ITUserManagement } from "@/components/dashboard/ITUserManagement";
+import { ITSystemLogs } from "@/components/dashboard/ITSystemLogs";
+import { ITTicketingSystem } from "@/components/dashboard/ITTicketingSystem";
+import { ITSystemMonitoring } from "@/components/dashboard/ITSystemMonitoring";
 
 const Dashboard = () => {
-  const [userRole] = useState(() => {
+  const [userRole, setUserRole] = useState(() => {
     return (localStorage.getItem("userRole") as string) || "user";
   });
+
+  // Quick role switcher for testing (remove in production)
+  const handleRoleChange = (role: string) => {
+    localStorage.setItem("userRole", role);
+    setUserRole(role);
+  };
 
   const getRoleBasedTabs = () => {
     const baseTabs = [
@@ -46,6 +62,21 @@ const Dashboard = () => {
         { value: "contributions", label: "Contributions", icon: DollarSign },
         { value: "reports", label: "Financial Reports", icon: FileText },
       ],
+      sunday_school: [
+        { value: "sunday-school", label: "Sunday School", icon: BookOpen },
+        { value: "reports", label: "Reports", icon: FileText },
+      ],
+      teacher: [
+        { value: "teacher-dashboard", label: "My Class", icon: Users },
+        { value: "reports", label: "Reports", icon: FileText },
+      ],
+      it: [
+        { value: "user-management", label: "User Management", icon: Users },
+        { value: "system-logs", label: "System Logs", icon: Activity },
+        { value: "ticketing", label: "Support Tickets", icon: Ticket },
+        { value: "monitoring", label: "System Monitor", icon: Monitor },
+        { value: "security", label: "Security", icon: Shield },
+      ],
       user: [
         { value: "giving", label: "My Giving", icon: Heart },
         { value: "events", label: "Events", icon: Calendar },
@@ -60,6 +91,9 @@ const Dashboard = () => {
       admin: "destructive" as const,
       registration: "secondary" as const,
       accounts: "default" as const,
+      sunday_school: "default" as const,
+      teacher: "secondary" as const,
+      it: "destructive" as const,
       user: "outline" as const
     };
     
@@ -82,6 +116,19 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-4">
               {getUserRoleBadge()}
+              <select 
+                value={userRole} 
+                onChange={(e) => handleRoleChange(e.target.value)}
+                className="px-3 py-1 border rounded text-sm"
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="registration">Registration</option>
+                <option value="accounts">Accounts</option>
+                <option value="sunday_school">Sunday School</option>
+                <option value="teacher">Teacher</option>
+                <option value="it">IT</option>
+              </select>
               <Button variant="outline" size="icon">
                 <Bell className="h-4 w-4" />
               </Button>
@@ -224,6 +271,47 @@ const Dashboard = () => {
 
             <TabsContent value="events">
               <MyEvents />
+            </TabsContent>
+
+            <TabsContent value="sunday-school">
+              <SundaySchoolDashboard />
+            </TabsContent>
+
+            <TabsContent value="teacher-dashboard">
+              <TeacherInterface />
+            </TabsContent>
+
+            <TabsContent value="user-management">
+              <ITUserManagement />
+            </TabsContent>
+
+            <TabsContent value="system-logs">
+              <ITSystemLogs />
+            </TabsContent>
+
+            <TabsContent value="ticketing">
+              <ITTicketingSystem />
+            </TabsContent>
+
+            <TabsContent value="monitoring">
+              <ITSystemMonitoring />
+            </TabsContent>
+
+            <TabsContent value="security">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Security Dashboard
+                  </CardTitle>
+                  <CardDescription>
+                    Advanced security monitoring and configuration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Advanced security features coming soon...</p>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="profile">

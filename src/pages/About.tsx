@@ -29,7 +29,7 @@ const About = () => {
                   TOT International was founded with a divine vision to raise champions for Christ who will transform nations through the power of God's Word. We believe every believer is called to be a champion in their sphere of influence.
                 </p>
                 <p className="text-lg text-gray-700 mb-6">
-                  Under the leadership of Pastor Timothy Kitui, our ministry has grown from a small fellowship to a thriving church family committed to excellence in worship, teaching, and service. We are passionate about seeing lives transformed and destinies fulfilled.
+                  Under the leadership of Pastor Steve, our ministry has grown from a small fellowship to a thriving church family committed to excellence in worship, teaching, and service. We are passionate about seeing lives transformed and destinies fulfilled.
                 </p>
                 <p className="text-lg text-gray-700 mb-6">
                   Our mission extends beyond the four walls of our church as we plant churches, train leaders, and impact communities across East Africa and beyond.
@@ -86,9 +86,9 @@ const About = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="bg-gray-100 h-64 w-64 mx-auto rounded-lg mb-4 flex items-center justify-center">
-                  <p className="text-gray-500">Pastor Timothy Kitui</p>
+                  <p className="text-gray-500">Pastor Steve</p>
                 </div>
-                <h3 className="text-xl font-bold text-black mb-2">Pastor Timothy Kitui</h3>
+                <h3 className="text-xl font-bold text-black mb-2">Pastor Steve</h3>
                 <p className="text-gray-700">Senior Pastor & Founder</p>
               </div>
               <div className="text-center">

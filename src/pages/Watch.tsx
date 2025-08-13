@@ -107,7 +107,7 @@ const Watch = () => {
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">Recent Messages</h2>
               <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-                Catch up on powerful messages from Pastor Timothy Kitui and other anointed ministers.
+                Catch up on powerful messages from Pastor Steve and other anointed ministers.
               </p>
             </div>
             
