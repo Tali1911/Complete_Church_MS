@@ -167,7 +167,7 @@ const NoticeOfFilming = () => {
 
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    <strong>Note:</strong> This notice is effective as of January 1, 2024, and may be updated periodically. 
+                    <strong>Note:</strong> This notice is effective as of January 1, 2025, and may be updated periodically. 
                     Current policies are always available on our website and at the church information desk.
                   </p>
                 </div>

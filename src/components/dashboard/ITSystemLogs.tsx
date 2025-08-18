@@ -34,7 +34,7 @@ export const ITSystemLogs = () => {
   const [logs] = useState<LogEntry[]>([
     {
       id: '1',
-      timestamp: '2024-01-15 14:30:25',
+      timestamp: '2025-01-15 14:30:25',
       level: 'info',
       category: 'Authentication',
       user: 'john@tot.com',
@@ -44,7 +44,7 @@ export const ITSystemLogs = () => {
     },
     {
       id: '2',
-      timestamp: '2024-01-15 14:25:10',
+      timestamp: '2025-01-15 14:25:10',
       level: 'warning',
       category: 'System',
       user: 'System',
@@ -54,7 +54,7 @@ export const ITSystemLogs = () => {
     },
     {
       id: '3',
-      timestamp: '2024-01-15 14:20:45',
+      timestamp: '2025-01-15 14:20:45',
       level: 'error',
       category: 'Payment',
       user: 'jane@tot.com',
@@ -64,7 +64,7 @@ export const ITSystemLogs = () => {
     },
     {
       id: '4',
-      timestamp: '2024-01-15 14:15:30',
+      timestamp: '2025-01-15 14:15:30',
       level: 'success',
       category: 'User Management',
       user: 'admin@tot.com',
@@ -74,7 +74,7 @@ export const ITSystemLogs = () => {
     },
     {
       id: '5',
-      timestamp: '2024-01-15 14:10:15',
+      timestamp: '2025-01-15 14:10:15',
       level: 'info',
       category: 'Attendance',
       user: 'registration@tot.com',

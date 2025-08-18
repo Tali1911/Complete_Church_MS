@@ -8,19 +8,19 @@ const Watch = () => {
   const sermons = [
     {
       title: "Champions of Faith",
-      date: "January 21, 2024",
+      date: "January 21, 2025",
       duration: "52 min",
       description: "Discover how to live as a champion of faith, overcoming every obstacle through God's power and promises."
     },
     {
       title: "Destined for Greatness",
-      date: "January 14, 2024", 
+      date: "January 14, 2025", 
       duration: "48 min",
       description: "Understanding your divine destiny and walking in the greatness God has planned for your life."
     },
     {
       title: "The Power of Prayer",
-      date: "January 7, 2024",
+      date: "January 7, 2025",
       duration: "45 min", 
       description: "Unlocking the supernatural power of prayer and intercession in your daily walk with God."
     },

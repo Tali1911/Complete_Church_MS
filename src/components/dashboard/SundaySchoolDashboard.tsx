@@ -40,7 +40,7 @@ export const SundaySchoolDashboard = () => {
       present: true, 
       emergencyContact: "Jane Smith - 555-0123",
       allergies: "Peanuts",
-      lastAttendance: "2024-08-03"
+      lastAttendance: "2025-08-03"
     },
     { 
       id: 2, 
@@ -50,7 +50,7 @@ export const SundaySchoolDashboard = () => {
       present: false, 
       emergencyContact: "Bob Brown - 555-0456",
       allergies: "None",
-      lastAttendance: "2024-07-27"
+      lastAttendance: "2025-07-27"
     },
     { 
       id: 3, 
@@ -60,7 +60,7 @@ export const SundaySchoolDashboard = () => {
       present: true, 
       emergencyContact: "Lisa Wilson - 555-0789",
       allergies: "Dairy",
-      lastAttendance: "2024-08-03"
+      lastAttendance: "2025-08-03"
     }
   ];
 

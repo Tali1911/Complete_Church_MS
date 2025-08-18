@@ -9,10 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { DollarSign, TrendingUp, Calendar, Download } from "lucide-react";
 
 const mockContributions = [
-  { id: 1, date: "2024-01-07", type: "tithe", amount: 500, service: "Sunday Morning Service" },
-  { id: 2, date: "2024-01-07", type: "offering", amount: 150, service: "Evening Service" },
-  { id: 3, date: "2024-01-07", type: "gift1", amount: 200, service: "Wednesday Prayer Service" },
-  { id: 4, date: "2024-01-07", type: "gift2", amount: 100, service: "Friday Youth Service" },
+  { id: 1, date: "2025-01-07", type: "tithe", amount: 500, service: "Sunday Morning Service" },
+  { id: 2, date: "2025-01-07", type: "offering", amount: 150, service: "Evening Service" },
+  { id: 3, date: "2025-01-07", type: "gift1", amount: 200, service: "Wednesday Prayer Service" },
+  { id: 4, date: "2025-01-07", type: "gift2", amount: 100, service: "Friday Youth Service" },
 ];
 
 export const FinancialContributions = () => {

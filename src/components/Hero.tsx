@@ -29,10 +29,10 @@ export const Hero = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-black mb-6 tracking-tight leading-tight">
             WELCOME TO<br />
-            <span className="text-primary-foreground">TOT INTERNATIONAL</span>
+            <span className="text-primary-foreground">TENT OF TESTIMONY MINISTRIES INTERNATIONAL</span>
           </h1>
           <p className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto font-light leading-relaxed">
-            A ministry committed to raising champions for Christ through sound biblical teaching, authentic worship, and transformational encounters with God.
+            Home of supernatural solutions.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">

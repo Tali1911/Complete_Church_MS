@@ -16,8 +16,8 @@ const Events = () => {
       recurring: true
     },
     {
-      title: "Champions Conference 2024",
-      date: "February 15-17, 2024",
+      title: "Champions Conference 2025",
+      date: "February 15-17, 2025",
       time: "7:00 PM Daily", 
       location: "Main Auditorium",
       description: "Three days of intensive ministry, worship, and impartation. Special guest ministers from around the world.",
@@ -26,7 +26,7 @@ const Events = () => {
     },
     {
       title: "TOT Youth Explosion",
-      date: "February 23, 2024",
+      date: "February 23, 2025",
       time: "6:00 PM - 9:00 PM",
       location: "Youth Center",
       description: "An explosive evening of worship, games, and powerful ministry designed for young champions.",
@@ -35,7 +35,7 @@ const Events = () => {
     },
     {
       title: "Prayer & Fasting Week",
-      date: "March 1-7, 2024",
+      date: "March 1-7, 2025",
       time: "6:00 AM & 6:00 PM",
       location: "Prayer Hall",
       description: "Seven days of corporate prayer and fasting for breakthrough, revival, and divine direction.",
@@ -44,7 +44,7 @@ const Events = () => {
     },
     {
       title: "Marriage Enrichment Retreat",
-      date: "March 15-17, 2024",
+      date: "March 15-17, 2025",
       time: "Friday - Sunday",
       location: "Retreat Center",
       description: "Strengthen your marriage through biblical principles, workshops, and intimate fellowship.",
@@ -53,7 +53,7 @@ const Events = () => {
     },
     {
       title: "Community Outreach",
-      date: "March 30, 2024",
+      date: "March 30, 2025",
       time: "8:00 AM - 4:00 PM",
       location: "Various Locations",
       description: "Reaching out to our community with love, food, medical care, and the Gospel of Jesus Christ.",

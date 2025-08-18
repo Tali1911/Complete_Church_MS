@@ -4,10 +4,10 @@ import { Progress } from "@/components/ui/progress";
 import { DollarSign, TrendingUp, Calendar, Heart } from "lucide-react";
 
 const mockGivingData = [
-  { id: 1, date: "2024-01-07", type: "tithe", amount: 500, description: "Sunday Morning Service" },
-  { id: 2, date: "2024-01-14", type: "offering", amount: 150, description: "Building Fund" },
-  { id: 3, date: "2024-01-21", type: "gift", amount: 200, description: "Missions Offering" },
-  { id: 4, date: "2024-01-28", type: "tithe", amount: 500, description: "Sunday Morning Service" },
+  { id: 1, date: "2025-01-07", type: "tithe", amount: 500, description: "Sunday Morning Service" },
+  { id: 2, date: "2025-01-14", type: "offering", amount: 150, description: "Building Fund" },
+  { id: 3, date: "2025-01-21", type: "gift", amount: 200, description: "Missions Offering" },
+  { id: 4, date: "2025-01-28", type: "tithe", amount: 500, description: "Sunday Morning Service" },
 ];
 
 export const MyGiving = () => {

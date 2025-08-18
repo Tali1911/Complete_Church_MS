@@ -24,8 +24,8 @@ interface User {
 export const ITUserManagement = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([
-    { id: '1', name: 'John Doe', email: 'john@tot.com', department: 'Admin', role: 'admin', status: 'active', lastLogin: '2024-01-15' },
-    { id: '2', name: 'Jane Smith', email: 'jane@tot.com', department: 'Registration', role: 'registration', status: 'active', lastLogin: '2024-01-14' },
+    { id: '1', name: 'John Doe', email: 'john@tot.com', department: 'Admin', role: 'admin', status: 'active', lastLogin: '2025-01-15' },
+    { id: '2', name: 'Jane Smith', email: 'jane@tot.com', department: 'Registration', role: 'registration', status: 'active', lastLogin: '2025-01-14' },
     { id: '3', name: 'Mike Johnson', email: 'mike@tot.com', department: 'Accounts', role: 'accounts', status: 'pending', lastLogin: 'Never' },
   ]);
 

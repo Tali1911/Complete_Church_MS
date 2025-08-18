@@ -9,9 +9,9 @@ const mockReports = [
   {
     id: 1,
     title: "Monthly Attendance Report",
-    description: "December 2024 attendance summary",
+    description: "December 2025 attendance summary",
     type: "attendance",
-    date: "2024-12-01",
+    date: "2025-12-01",
     status: "ready"
   },
   {
@@ -19,15 +19,15 @@ const mockReports = [
     title: "Q4 Financial Summary",
     description: "October-December financial overview",
     type: "financial",
-    date: "2024-12-31",
+    date: "2025-12-31",
     status: "ready"
   },
   {
     id: 3,
     title: "Annual Membership Report",
-    description: "2024 membership growth and statistics",
+    description: "2025 membership growth and statistics",
     type: "membership",
-    date: "2024-12-31",
+    date: "2025-12-31",
     status: "generating"
   },
   {
@@ -35,7 +35,7 @@ const mockReports = [
     title: "Weekly Service Analytics",
     description: "Last 4 weeks service data",
     type: "analytics",
-    date: "2024-12-29",
+    date: "2025-12-29",
     status: "ready"
   }
 ];
