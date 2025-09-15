@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -30,17 +32,51 @@ import { ITUserManagement } from "@/components/dashboard/ITUserManagement";
 import { ITSystemLogs } from "@/components/dashboard/ITSystemLogs";
 import { ITTicketingSystem } from "@/components/dashboard/ITTicketingSystem";
 import { ITSystemMonitoring } from "@/components/dashboard/ITSystemMonitoring";
+import { ITSecurity } from "@/components/dashboard/ITSecurity";
+import { DashboardOverviewStats } from "@/components/dashboard/DashboardOverviewStats";
+import { RecentActivityCard } from "@/components/dashboard/RecentActivityCard";
+import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 
 const Dashboard = () => {
-  const [userRole, setUserRole] = useState(() => {
-    return (localStorage.getItem("userRole") as string) || "user";
-  });
+  const { isAuthenticated, userRole: authUserRole, loading, signOut, refreshRole } = useAuth();
+  const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<string>("user");
 
-  // Quick role switcher for testing (remove in production)
-  const handleRoleChange = (role: string) => {
-    localStorage.setItem("userRole", role);
-    setUserRole(role);
-  };
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  useEffect(() => {
+    if (authUserRole) {
+      setUserRole(authUserRole);
+    }
+  }, [authUserRole]);
+
+  // Refresh role when dashboard loads to get latest role changes
+  useEffect(() => {
+    if (isAuthenticated && refreshRole) {
+      refreshRole();
+    }
+  }, [isAuthenticated, refreshRole]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const getRoleBasedTabs = () => {
     const baseTabs = [
@@ -116,21 +152,11 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-4">
               {getUserRoleBadge()}
-              <select 
-                value={userRole} 
-                onChange={(e) => handleRoleChange(e.target.value)}
-                className="px-3 py-1 border rounded text-sm"
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-                <option value="registration">Registration</option>
-                <option value="accounts">Accounts</option>
-                <option value="sunday_school">Sunday School</option>
-                <option value="teacher">Teacher</option>
-                <option value="it">IT</option>
-              </select>
               <Button variant="outline" size="icon">
                 <Bell className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" onClick={signOut}>
+                Sign Out
               </Button>
             </div>
           </div>
@@ -149,107 +175,11 @@ const Dashboard = () => {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">1,234</div>
-                    <p className="text-xs text-muted-foreground">+12 from last month</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">This Week's Attendance</CardTitle>
-                    <UserCheck className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">856</div>
-                    <p className="text-xs text-muted-foreground">69% attendance rate</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Monthly Contributions</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">$25,430</div>
-                    <p className="text-xs text-muted-foreground">+8% from last month</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">8</div>
-                    <p className="text-xs text-muted-foreground">This month</p>
-                  </CardContent>
-                </Card>
-              </div>
+              <DashboardOverviewStats />
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                    <CardDescription>Latest updates and notifications</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">New member joined</p>
-                        <p className="text-xs text-muted-foreground">Sarah Johnson joined the family</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="w-2 h-2 bg-secondary rounded-full mt-2" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Sunday service attendance recorded</p>
-                        <p className="text-xs text-muted-foreground">856 members attended this week</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="w-2 h-2 bg-accent rounded-full mt-2" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Monthly report generated</p>
-                        <p className="text-xs text-muted-foreground">Financial summary for November</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                    <CardDescription>Frequently used features</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button variant="outline" className="w-full justify-start">
-                      <UserCheck className="mr-2 h-4 w-4" />
-                      Record Today's Attendance
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <DollarSign className="mr-2 h-4 w-4" />
-                      Add Contribution
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <FileText className="mr-2 h-4 w-4" />
-                      Generate Report
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      View Member Directory
-                    </Button>
-                  </CardContent>
-                </Card>
+                <RecentActivityCard />
+                <QuickActionsCard />
               </div>
             </TabsContent>
 
@@ -298,20 +228,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="security">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Security Dashboard
-                  </CardTitle>
-                  <CardDescription>
-                    Advanced security monitoring and configuration
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Advanced security features coming soon...</p>
-                </CardContent>
-              </Card>
+              <ITSecurity />
             </TabsContent>
 
             <TabsContent value="profile">

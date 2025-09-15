@@ -1,327 +1,537 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Shield, Users, Key, UserCheck, Edit, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserPlus, Users, Shield, RefreshCw, CheckCircle, XCircle, Briefcase, Building2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface User {
+interface UserProfile {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  address: string;
+  county: string;
+  created_at: string;
+  updated_at: string;
+  user_roles?: Array<{
+    role: string;
+  }>;
+}
+
+interface Department {
   id: string;
   name: string;
-  email: string;
-  department: string;
-  role: string;
-  status: 'active' | 'inactive' | 'pending';
-  lastLogin: string;
+  description: string;
+  icon: string;
+  is_visible: boolean;
 }
 
 export const ITUserManagement = () => {
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([
-    { id: '1', name: 'John Doe', email: 'john@tot.com', department: 'Admin', role: 'admin', status: 'active', lastLogin: '2025-01-15' },
-    { id: '2', name: 'Jane Smith', email: 'jane@tot.com', department: 'Registration', role: 'registration', status: 'active', lastLogin: '2025-01-14' },
-    { id: '3', name: 'Mike Johnson', email: 'mike@tot.com', department: 'Accounts', role: 'accounts', status: 'pending', lastLogin: 'Never' },
-  ]);
 
-  const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    department: '',
-    role: '',
-    password: ''
-  });
+  const roleOptions = [
+    { value: "user", label: "User", description: "General access" },
+    { value: "admin", label: "Admin", description: "Full system access" },
+    { value: "pastor", label: "Pastor", description: "Content management & ministry oversight" },
+    { value: "registration", label: "Registration", description: "Attendance tracking" },
+    { value: "accounts", label: "Accounts", description: "Financial management & requisitions" },
+    { value: "sunday_school", label: "Sunday School", description: "Manage children's ministry" },
+    { value: "teacher", label: "Teacher", description: "Class management & attendance" },
+    { value: "it", label: "IT", description: "System administration & support" },
+    { value: "media", label: "Media", description: "Content and media management" }
+  ];
 
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  // System logging function
+  const logSystemEvent = async (
+    action: string,
+    details: string,
+    level: 'info' | 'warning' | 'error' = 'info',
+    metadata?: any
+  ) => {
+    try {
+      const user = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('system_logs')
+        .insert({
+          log_level: level,
+          category: 'User Management',
+          action,
+          details,
+          user_id: user.data.user?.id,
+          metadata,
+          ip_address: null // Will be handled by database if needed
+        });
 
-  const handleAddUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.department || !newUser.role) {
+      if (error) {
+        console.error('Failed to log system event:', error);
+      }
+    } catch (error) {
+      console.error('Error logging system event:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      
+      // First get all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (profilesError) {
+        await logSystemEvent(
+          'fetch_user_profiles_failed',
+          `Failed to fetch user profiles: ${profilesError.message}`,
+          'error',
+          { error: profilesError }
+        );
+        toast({
+          title: "Error",
+          description: "Failed to fetch user profiles",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Then get user roles for each profile
+      const { data: userRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) {
+        await logSystemEvent(
+          'fetch_user_roles_failed',
+          `Failed to fetch user roles: ${rolesError.message}`,
+          'error',
+          { error: rolesError }
+        );
+        toast({
+          title: "Error",
+          description: "Failed to fetch user roles",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Combine the data
+      const usersWithRoles = profiles?.map(profile => ({
+        ...profile,
+        user_roles: userRoles?.filter(role => role.user_id === profile.user_id) || []
+      })) || [];
+
+      setUsers(usersWithRoles);
+      await logSystemEvent(
+        'user_data_fetched',
+        `Successfully fetched ${usersWithRoles.length} user profiles`,
+        'info',
+        { user_count: usersWithRoles.length }
+      );
+    } catch (error: any) {
+      await logSystemEvent(
+        'fetch_users_error',
+        `Unexpected error while fetching users: ${error.message}`,
+        'error',
+        { error: error.message }
+      );
+      toast({
+        title: "Error", 
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const { data: depts, error } = await supabase
+        .from("serve_departments")
+        .select("*")
+        .eq("is_visible", true)
+        .order("display_order", { ascending: true });
+
+      if (error) {
+        await logSystemEvent(
+          'fetch_departments_failed',
+          `Failed to fetch departments: ${error.message}`,
+          'error',
+          { error }
+        );
+        return;
+      }
+
+      setDepartments(depts || []);
+      await logSystemEvent(
+        'departments_fetched',
+        `Successfully fetched ${depts?.length || 0} departments`,
+        'info',
+        { department_count: depts?.length || 0 }
+      );
+    } catch (error: any) {
+      await logSystemEvent(
+        'fetch_departments_error',
+        `Unexpected error while fetching departments: ${error.message}`,
+        'error',
+        { error: error.message }
+      );
+    }
+  };
+
+  const updateUserRole = async (userId: string, newRole: string, departments: string[] = []) => {
+    if (isUpdating) return;
+    
+    try {
+      setIsUpdating(true);
+      const currentUser = await supabase.auth.getUser();
+      
+      // Get user details for logging
+      const targetUser = users.find(u => u.user_id === userId);
+      const userName = targetUser ? `${targetUser.first_name} ${targetUser.last_name}` : 'Unknown User';
+      
+      // First remove existing roles
+      const { error: deleteError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      if (deleteError) {
+        await logSystemEvent(
+          'role_update_failed',
+          `Failed to remove existing roles for user ${userName}: ${deleteError.message}`,
+          'error',
+          { 
+            target_user_id: userId,
+            target_user_name: userName,
+            admin_user_id: currentUser.data.user?.id,
+            error: deleteError 
+          }
+        );
+        throw deleteError;
+      }
+
+      // Then add the new role with proper type casting
+      const { error: insertError } = await supabase
+        .from("user_roles")
+        .insert({ 
+          user_id: userId, 
+          role: newRole as "user" | "admin" | "pastor" | "registration" | "accounts" | "sunday_school" | "teacher" | "it" | "media"
+        });
+
+      if (insertError) {
+        await logSystemEvent(
+          'role_update_failed',
+          `Failed to assign new role '${newRole}' to user ${userName}: ${insertError.message}`,
+          'error',
+          { 
+            target_user_id: userId,
+            target_user_name: userName,
+            new_role: newRole,
+            departments: departments,
+            admin_user_id: currentUser.data.user?.id,
+            error: insertError 
+          }
+        );
+        throw insertError;
+      }
+
+      // Log successful role change
+      await logSystemEvent(
+        'user_role_updated',
+        `Successfully updated role for user ${userName} to '${newRole}'${departments.length > 0 ? ` with departments: ${departments.join(', ')}` : ''}`,
+        'info',
+        { 
+          target_user_id: userId,
+          target_user_name: userName,
+          new_role: newRole,
+          departments: departments,
+          admin_user_id: currentUser.data.user?.id
+        }
+      );
+
+      toast({
+        title: "Success",
+        description: `User role updated successfully to ${newRole}`,
+      });
+      
+      fetchUsers(); // Refresh the list
+      
+    } catch (error: any) {
+      await logSystemEvent(
+        'role_update_critical_error',
+        `Critical error during role update for user ID ${userId}: ${error.message}`,
+        'error',
+        { 
+          target_user_id: userId,
+          error: error.message,
+          stack: error.stack
+        }
+      );
+      
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
+        description: "Failed to update user role. This has been logged for IT review.",
+        variant: "destructive",
       });
-      return;
+    } finally {
+      setIsUpdating(false);
     }
+  };
 
-    const user: User = {
-      id: Date.now().toString(),
-      name: newUser.name,
-      email: newUser.email,
-      department: newUser.department,
-      role: newUser.role,
-      status: 'pending',
-      lastLogin: 'Never'
+  useEffect(() => {
+    fetchUsers();
+    fetchDepartments();
+  }, []);
+
+  const getUserRoles = (user: UserProfile) => {
+    return user.user_roles?.map(role => role.role) || ["user"];
+  };
+
+  const getStatusBadge = (roles: string[]) => {
+    const primaryRole = roles[0] || "user";
+    
+    const roleColors: { [key: string]: string } = {
+      admin: "bg-red-500 hover:bg-red-600",
+      pastor: "bg-purple-500 hover:bg-purple-600", 
+      it: "bg-blue-500 hover:bg-blue-600",
+      accounts: "bg-green-500 hover:bg-green-600",
+      registration: "bg-yellow-500 hover:bg-yellow-600",
+      sunday_school: "bg-pink-500 hover:bg-pink-600",
+      teacher: "bg-indigo-500 hover:bg-indigo-600",
+      user: "bg-gray-500 hover:bg-gray-600"
     };
 
-    setUsers([...users, user]);
-    setNewUser({ name: '', email: '', department: '', role: '', password: '' });
-    setIsAddUserOpen(false);
-    
-    toast({
-      title: "User Added",
-      description: `${newUser.name} has been added to the system`,
-    });
-  };
-
-  const handlePromoteUser = (userId: string, newRole: string) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, role: newRole, department: newRole.charAt(0).toUpperCase() + newRole.slice(1) }
-        : user
-    ));
-    
-    toast({
-      title: "User Promoted",
-      description: "User role has been updated successfully",
-    });
-  };
-
-  const handleDeactivateUser = (userId: string) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, status: user.status === 'active' ? 'inactive' : 'active' }
-        : user
-    ));
-    
-    toast({
-      title: "User Status Updated",
-      description: "User status has been changed",
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      active: 'default',
-      inactive: 'destructive',
-      pending: 'secondary'
-    } as const;
-    
-    return <Badge variant={variants[status as keyof typeof variants]}>{status}</Badge>;
+    return (
+      <Badge className={`${roleColors[primaryRole]} text-white`}>
+        {primaryRole.replace('_', ' ').toUpperCase()}
+      </Badge>
+    );
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">User Management</h2>
-          <p className="text-muted-foreground">Manage system users and department access</p>
+          <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+          <p className="text-muted-foreground">
+            Manage user accounts and assign departmental access
+          </p>
         </div>
-        <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogDescription>
-                Create a new user account and assign department access
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Temporary Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                  placeholder="Generate temporary password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select onValueChange={(value) => setNewUser({...newUser, department: value, role: value.toLowerCase()})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Registration">Registration</SelectItem>
-                    <SelectItem value="Accounts">Accounts</SelectItem>
-                    <SelectItem value="Sunday School">Sunday School</SelectItem>
-                    <SelectItem value="Teacher">Teacher</SelectItem>
-                    <SelectItem value="IT">IT</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleAddUser} className="w-full">
-                Create User Account
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={fetchUsers} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
+      <Tabs defaultValue="all-users" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="users">All Users</TabsTrigger>
-          <TabsTrigger value="permissions">Role Management</TabsTrigger>
-          <TabsTrigger value="bulk">Bulk Actions</TabsTrigger>
+          <TabsTrigger value="all-users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            All Users
+          </TabsTrigger>
+          <TabsTrigger value="role-management" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Role Management
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="users">
+        <TabsContent value="all-users" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                System Users
-              </CardTitle>
+              <CardTitle>Registered Users</CardTitle>
               <CardDescription>
-                Manage user accounts and department assignments
+                View and manage all users who have joined the church family
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.department}</TableCell>
-                      <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell>{user.lastLogin}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Select onValueChange={(value) => handlePromoteUser(user.id, value)}>
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="Promote" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="registration">Registration</SelectItem>
-                              <SelectItem value="accounts">Accounts</SelectItem>
-                              <SelectItem value="sunday_school">Sunday School</SelectItem>
-                              <SelectItem value="teacher">Teacher</SelectItem>
-                              <SelectItem value="it">IT</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeactivateUser(user.id)}
-                          >
-                            {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                          </Button>
-                        </div>
-                      </TableCell>
+              {loading ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                  <p>Loading users...</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Current Role</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => {
+                      const roles = getUserRoles(user);
+                      return (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">
+                                {user.first_name} {user.last_name}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>{user.phone}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>{user.county}</div>
+                              <div className="text-muted-foreground text-xs">
+                                {user.address}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(roles)}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                   variant="outline"
+                                   size="sm"
+                                   onClick={() => {
+                                     setSelectedUserId(user.user_id);
+                                     setSelectedRole(roles[0] || "user");
+                                     setSelectedDepartments([]);
+                                   }}
+                                 >
+                                   <Briefcase className="h-4 w-4 mr-1" />
+                                   Change Role
+                                 </Button>
+                              </DialogTrigger>
+                                <DialogContent className="max-w-2xl">
+                                 <DialogHeader>
+                                   <DialogTitle>Update User Role & Department Access</DialogTitle>
+                                   <DialogDescription>
+                                     Change the role and department access for {user.first_name} {user.last_name}
+                                   </DialogDescription>
+                                 </DialogHeader>
+                                 <div className="space-y-6">
+                                   <div className="space-y-2">
+                                     <Label>Select New Role</Label>
+                                     <Select value={selectedRole} onValueChange={setSelectedRole}>
+                                       <SelectTrigger>
+                                         <SelectValue placeholder="Select a role" />
+                                       </SelectTrigger>
+                                       <SelectContent>
+                                         {roleOptions.map((role) => (
+                                           <SelectItem key={role.value} value={role.value}>
+                                             <div>
+                                               <div className="font-medium">{role.label}</div>
+                                               <div className="text-sm text-muted-foreground">
+                                                 {role.description}
+                                               </div>
+                                             </div>
+                                           </SelectItem>
+                                         ))}
+                                       </SelectContent>
+                                     </Select>
+                                   </div>
+
+                                   {departments.length > 0 && (
+                                     <div className="space-y-3">
+                                       <div className="flex items-center gap-2">
+                                         <Building2 className="h-4 w-4" />
+                                         <Label>Department Access (Optional)</Label>
+                                       </div>
+                                       <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto">
+                                         {departments.map((dept) => (
+                                           <div key={dept.id} className="flex items-center space-x-2 p-2 border rounded">
+                                             <Checkbox
+                                               id={`dept-${dept.id}`}
+                                               checked={selectedDepartments.includes(dept.id)}
+                                               onCheckedChange={(checked) => {
+                                                 if (checked) {
+                                                   setSelectedDepartments(prev => [...prev, dept.id]);
+                                                 } else {
+                                                   setSelectedDepartments(prev => prev.filter(id => id !== dept.id));
+                                                 }
+                                               }}
+                                             />
+                                             <label htmlFor={`dept-${dept.id}`} className="text-sm cursor-pointer">
+                                               <div className="font-medium">{dept.name}</div>
+                                               <div className="text-xs text-muted-foreground">{dept.description}</div>
+                                             </label>
+                                           </div>
+                                         ))}
+                                       </div>
+                                       <p className="text-xs text-muted-foreground">
+                                         Select departments this user should have access to manage or coordinate.
+                                       </p>
+                                     </div>
+                                   )}
+
+                                   <div className="flex gap-2">
+                                     <Button
+                                       onClick={() => updateUserRole(selectedUserId, selectedRole, selectedDepartments)}
+                                       className="flex-1"
+                                       disabled={isUpdating}
+                                     >
+                                       {isUpdating ? "Updating..." : "Update Role & Access"}
+                                     </Button>
+                                   </div>
+                                 </div>
+                               </DialogContent>
+                            </Dialog>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="permissions">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Role Permissions
-              </CardTitle>
-              <CardDescription>
-                Configure department access and permissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Admin Role</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm">
-                      <li>• Full system access</li>
-                      <li>• User management</li>
-                      <li>• System configuration</li>
-                      <li>• All reports and analytics</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">IT Role</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm">
-                      <li>• User credential management</li>
-                      <li>• System logs access</li>
-                      <li>• Ticketing system</li>
-                      <li>• Security monitoring</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="bulk">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Bulk Operations
-              </CardTitle>
-              <CardDescription>
-                Perform bulk actions on user accounts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="outline" className="h-20 flex-col">
-                  <UserCheck className="h-6 w-6 mb-2" />
-                  Bulk Import Users
-                </Button>
-                <Button variant="outline" className="h-20 flex-col">
-                  <Shield className="h-6 w-6 mb-2" />
-                  Reset Passwords
-                </Button>
-                <Button variant="outline" className="h-20 flex-col">
-                  <Users className="h-6 w-6 mb-2" />
-                  Export User List
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="role-management" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {roleOptions.map((role) => (
+              <Card key={role.value}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{role.label}</CardTitle>
+                  <CardDescription>{role.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {users.filter(user => 
+                      getUserRoles(user).includes(role.value)
+                    ).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    active users
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

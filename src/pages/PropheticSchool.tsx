@@ -33,8 +33,8 @@ const mockCourses: Course[] = [
     description: "Learn the foundational principles of prophetic ministry, including hearing God's voice, understanding biblical prophecy, and operating in the prophetic gifts.",
     instructor: "Prophet Sarah Johnson",
     duration: "6 weeks",
-    startDate: "2025-02-15",
-    endDate: "2025-03-28",
+    startDate: "2024-02-15",
+    endDate: "2024-03-28",
     price: 99,
     enrolled: 45,
     maxStudents: 60,
@@ -51,8 +51,8 @@ const mockCourses: Course[] = [
     description: "Deep dive into advanced prophetic ministry including corporate prophecy, prophetic intercession, and ministry activation.",
     instructor: "Prophet Michael Davis",
     duration: "8 weeks",
-    startDate: "2025-03-15",
-    endDate: "2025-05-10",
+    startDate: "2024-03-15",
+    endDate: "2024-05-10",
     price: 149,
     enrolled: 23,
     maxStudents: 40,
@@ -69,8 +69,8 @@ const mockCourses: Course[] = [
     description: "Explore the intersection of worship and prophecy, learning to flow in spontaneous worship and prophetic intercession.",
     instructor: "Pastor Rachel Thompson",
     duration: "4 weeks",
-    startDate: "2025-01-20",
-    endDate: "2025-02-16",
+    startDate: "2024-01-20",
+    endDate: "2024-02-16",
     price: 79,
     enrolled: 34,
     maxStudents: 50,
@@ -122,7 +122,7 @@ const PropheticSchool = () => {
   };
 
   return (
-    <AuthGuard isAuthenticated={isAuthenticated}>
+    <AuthGuard>
       <Navigation />
       <div className="min-h-screen bg-background py-8 pt-28">
         <div className="container mx-auto px-4 max-w-6xl">

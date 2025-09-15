@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,80 +21,44 @@ import {
   Clock
 } from "lucide-react";
 
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: 'info' | 'warning' | 'error' | 'success';
-  category: string;
-  user: string;
-  action: string;
-  details: string;
-  ip: string;
-}
+type LogEntry = Database['public']['Tables']['system_logs']['Row'];
 
 export const ITSystemLogs = () => {
-  const [logs] = useState<LogEntry[]>([
-    {
-      id: '1',
-      timestamp: '2025-01-15 14:30:25',
-      level: 'info',
-      category: 'Authentication',
-      user: 'john@tot.com',
-      action: 'User Login',
-      details: 'Successful login attempt',
-      ip: '192.168.1.100'
-    },
-    {
-      id: '2',
-      timestamp: '2025-01-15 14:25:10',
-      level: 'warning',
-      category: 'System',
-      user: 'System',
-      action: 'Database Connection',
-      details: 'High connection pool usage (85%)',
-      ip: 'localhost'
-    },
-    {
-      id: '3',
-      timestamp: '2025-01-15 14:20:45',
-      level: 'error',
-      category: 'Payment',
-      user: 'jane@tot.com',
-      action: 'Payment Processing',
-      details: 'Failed to process donation payment',
-      ip: '192.168.1.105'
-    },
-    {
-      id: '4',
-      timestamp: '2025-01-15 14:15:30',
-      level: 'success',
-      category: 'User Management',
-      user: 'admin@tot.com',
-      action: 'User Creation',
-      details: 'New user account created for mike@tot.com',
-      ip: '192.168.1.101'
-    },
-    {
-      id: '5',
-      timestamp: '2025-01-15 14:10:15',
-      level: 'info',
-      category: 'Attendance',
-      user: 'registration@tot.com',
-      action: 'Attendance Record',
-      details: 'Sunday service attendance marked: 856 members',
-      ip: '192.168.1.102'
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      setLogs([]);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
 
   const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.details.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = filterLevel === 'all' || log.level === filterLevel;
+    const searchText = log.action.toLowerCase() + ' ' + 
+                      (log.user_id || 'System').toLowerCase() + ' ' +
+                      log.details.toLowerCase();
+    const matchesSearch = searchText.includes(searchTerm.toLowerCase());
+    const matchesLevel = filterLevel === 'all' || log.log_level === filterLevel;
     const matchesCategory = filterCategory === 'all' || log.category === filterCategory;
     
     return matchesSearch && matchesLevel && matchesCategory;
@@ -120,7 +86,7 @@ export const ITSystemLogs = () => {
 
   const getLogStats = () => {
     const stats = logs.reduce((acc, log) => {
-      acc[log.level] = (acc[log.level] || 0) + 1;
+      acc[log.log_level] = (acc[log.log_level] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
@@ -283,18 +249,20 @@ export const ITSystemLogs = () => {
                 <TableBody>
                   {filteredLogs.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell className="font-mono text-sm">{log.timestamp}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {new Date(log.created_at).toLocaleString()}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {getLevelIcon(log.level)}
-                          {getLevelBadge(log.level)}
+                          {getLevelIcon(log.log_level)}
+                          {getLevelBadge(log.log_level)}
                         </div>
                       </TableCell>
                       <TableCell>{log.category}</TableCell>
-                      <TableCell>{log.user}</TableCell>
+                      <TableCell>{log.user_id || 'System'}</TableCell>
                       <TableCell className="font-medium">{log.action}</TableCell>
                       <TableCell className="max-w-xs truncate">{log.details}</TableCell>
-                      <TableCell className="font-mono text-sm">{log.ip}</TableCell>
+                      <TableCell className="font-mono text-sm">{log.ip_address || 'N/A'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -316,7 +284,7 @@ export const ITSystemLogs = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {logs.filter(log => log.level === 'error').map((log) => (
+                {logs.filter(log => log.log_level === 'error').map((log) => (
                   <Card key={log.id} className="border-destructive/20">
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between">
@@ -328,9 +296,9 @@ export const ITSystemLogs = () => {
                           </div>
                           <p className="text-sm text-muted-foreground">{log.details}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>User: {log.user}</span>
-                            <span>Time: {log.timestamp}</span>
-                            <span>IP: {log.ip}</span>
+                            <span>User: {log.user_id || 'System'}</span>
+                            <span>Time: {new Date(log.created_at).toLocaleString()}</span>
+                            <span>IP: {log.ip_address || 'N/A'}</span>
                           </div>
                         </div>
                         <Button variant="outline" size="sm">

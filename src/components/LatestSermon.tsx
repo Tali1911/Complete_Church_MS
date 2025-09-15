@@ -26,16 +26,16 @@ export const LatestSermon = () => {
               <div className="flex flex-wrap gap-6 text-gray-300">
                 <div className="flex items-center">
                   <User className="h-5 w-5 mr-2" />
-                  <span className="font-medium">Pastor Steve</span>
+                  <span className="font-medium">Pastor Timothy Kitui</span>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 mr-2" />
-                  <span className="font-medium">January 21, 2025</span>
+                  <span className="font-medium">January 21, 2024</span>
                 </div>
               </div>
 
               <p className="text-lg text-gray-300 leading-relaxed">
-                In this powerful message, Prophet Fred Akama teaches us how to rise above every limitation through faith in God's promises and live as the champions we are called to be in Christ Jesus.
+                In this powerful message, Pastor Timothy teaches us how to rise above every limitation through faith in God's promises and live as the champions we are called to be in Christ Jesus.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">

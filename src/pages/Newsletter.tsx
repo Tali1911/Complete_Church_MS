@@ -131,18 +131,18 @@ const Newsletter = () => {
           <div className="space-y-6">
             {[
               {
-                title: "Walking in Faith - December 2025",
-                date: "December 15, 2025",
+                title: "Walking in Faith - December 2024",
+                date: "December 15, 2024",
                 excerpt: "This month we explore what it means to trust God's plan even when we can't see the full picture..."
               },
               {
-                title: "Gratitude & Giving - November 2025",
-                date: "November 15, 2025",
+                title: "Gratitude & Giving - November 2024",
+                date: "November 15, 2024",
                 excerpt: "As we enter the season of thanksgiving, let's reflect on God's abundant blessings in our lives..."
               },
               {
-                title: "Community & Connection - October 2025",
-                date: "October 15, 2025",
+                title: "Community & Connection - October 2024",
+                date: "October 15, 2024",
                 excerpt: "Learn about our new small group initiatives and upcoming community outreach programs..."
               }
             ].map((newsletter, index) => (

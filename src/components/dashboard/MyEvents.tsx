@@ -7,7 +7,7 @@ const mockEvents = [
   {
     id: 1,
     title: "Sunday Morning Service",
-    date: "2025-01-07",
+    date: "2024-01-07",
     time: "09:00 AM",
     location: "Main Sanctuary",
     type: "service",
@@ -17,7 +17,7 @@ const mockEvents = [
   {
     id: 2,
     title: "Bible Study Group",
-    date: "2025-01-10",
+    date: "2024-01-10",
     time: "07:00 PM",
     location: "Fellowship Hall",
     type: "study",
@@ -26,8 +26,8 @@ const mockEvents = [
   },
   {
     id: 3,
-    title: "Youth Conference 2025",
-    date: "2025-01-15",
+    title: "Youth Conference 2024",
+    date: "2024-01-15",
     time: "10:00 AM",
     location: "Conference Center",
     type: "conference",
@@ -37,7 +37,7 @@ const mockEvents = [
   {
     id: 4,
     title: "Community Outreach",
-    date: "2025-01-20",
+    date: "2024-01-20",
     time: "02:00 PM",
     location: "Downtown Community Center",
     type: "outreach",

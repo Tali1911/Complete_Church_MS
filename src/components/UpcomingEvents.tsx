@@ -6,7 +6,7 @@ import { Calendar, Clock, MapPin, ArrowRight } from "lucide-react";
 export const UpcomingEvents = () => {
   const events = [
     {
-      title: "Champions Conference 2025",
+      title: "Champions Conference 2024",
       date: "FEB 15-17",
       time: "7:00 PM Daily",
       location: "Main Auditorium",

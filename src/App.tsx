@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Watch from "./pages/Watch";
@@ -12,6 +13,8 @@ import Give from "./pages/Give";
 import Shop from "./pages/Shop";
 import VisitUs from "./pages/VisitUs";
 import AdminDashboard from "./pages/AdminDashboard";
+import PastorsDashboard from "./pages/PastorsDashboard";
+import RequisitionsPage from "./pages/RequisitionsPage";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -25,16 +28,18 @@ import PropheticSchool from "./pages/PropheticSchool";
 import CounselingMentalHealth from "./pages/CounselingMentalHealth";
 import Newsletter from "./pages/Newsletter";
 import NoticeOfFilming from "./pages/NoticeOfFilming";
+import MediaDashboard from "./pages/MediaDashboard";
 import FAQ from "./pages/FAQ";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/about" element={<About />} />
@@ -45,6 +50,10 @@ const App = () => (
           <Route path="/visit-us" element={<VisitUs />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/pastors" element={<PastorsDashboard />} />
+          <Route path="/media-dashboard" element={<MediaDashboard />} />
+          <Route path="/requisitions" element={<RequisitionsPage />} />
           
           <Route path="/join-the-family" element={<JoinTheFamily />} />
           <Route path="/serve-with-us" element={<ServeWithUs />} />
@@ -62,6 +71,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

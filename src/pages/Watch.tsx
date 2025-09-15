@@ -8,19 +8,19 @@ const Watch = () => {
   const sermons = [
     {
       title: "Champions of Faith",
-      date: "January 21, 2025",
+      date: "January 21, 2024",
       duration: "52 min",
       description: "Discover how to live as a champion of faith, overcoming every obstacle through God's power and promises."
     },
     {
       title: "Destined for Greatness",
-      date: "January 14, 2025", 
+      date: "January 14, 2024", 
       duration: "48 min",
       description: "Understanding your divine destiny and walking in the greatness God has planned for your life."
     },
     {
       title: "The Power of Prayer",
-      date: "January 7, 2025",
+      date: "January 7, 2024",
       duration: "45 min", 
       description: "Unlocking the supernatural power of prayer and intercession in your daily walk with God."
     },
@@ -107,7 +107,7 @@ const Watch = () => {
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">Recent Messages</h2>
               <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-                Catch up on powerful messages from Pastor Steve and other anointed ministers.
+                Catch up on powerful messages from Pastor Timothy Kitui and other anointed ministers.
               </p>
             </div>
             
