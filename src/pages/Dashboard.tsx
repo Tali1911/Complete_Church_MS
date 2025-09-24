@@ -19,7 +19,8 @@ import {
   Monitor,
   Shield,
   Activity,
-  Ticket
+  Ticket,
+  Mail
 } from "lucide-react";
 import { AttendanceTracker } from "@/components/dashboard/AttendanceTracker";
 import { FinancialContributions } from "@/components/dashboard/FinancialContributions";
@@ -36,6 +37,7 @@ import { ITSecurity } from "@/components/dashboard/ITSecurity";
 import { DashboardOverviewStats } from "@/components/dashboard/DashboardOverviewStats";
 import { RecentActivityCard } from "@/components/dashboard/RecentActivityCard";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
+import { NewsletterSignup } from "@/components/shared/NewsletterSignup";
 
 const Dashboard = () => {
   const { isAuthenticated, userRole: authUserRole, loading, signOut, refreshRole } = useAuth();
@@ -47,6 +49,31 @@ const Dashboard = () => {
       navigate('/auth');
     }
   }, [isAuthenticated, loading, navigate]);
+
+  // Redirect media users to media dashboard
+  useEffect(() => {
+    console.log('Dashboard redirect check:', { loading, isAuthenticated, authUserRole });
+    if (!loading && isAuthenticated && authUserRole === 'media') {
+      console.log('Redirecting media user to media dashboard');
+      navigate('/media-dashboard');
+    }
+  }, [isAuthenticated, loading, authUserRole, navigate]);
+
+  // Redirect marketing users to marketing dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated && authUserRole === 'marketing') {
+      console.log('Redirecting marketing user to marketing dashboard');
+      navigate('/marketing-dashboard');
+    }
+  }, [isAuthenticated, loading, authUserRole, navigate]);
+
+  // Redirect registration users to registration dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated && authUserRole === 'registration') {
+      console.log('Redirecting registration user to registration dashboard');
+      navigate('/registration-dashboard');
+    }
+  }, [isAuthenticated, loading, authUserRole, navigate]);
 
   useEffect(() => {
     if (authUserRole) {
@@ -81,7 +108,9 @@ const Dashboard = () => {
   const getRoleBasedTabs = () => {
     const baseTabs = [
       { value: "overview", label: "Overview", icon: Calendar },
+      { value: "give", label: "Give", icon: Heart },
       { value: "profile", label: "Profile", icon: Users },
+      { value: "newsletter", label: "Newsletter", icon: Mail },
     ];
 
     const roleTabs = {
@@ -130,12 +159,24 @@ const Dashboard = () => {
       sunday_school: "default" as const,
       teacher: "secondary" as const,
       it: "destructive" as const,
+      media: "default" as const,
       user: "outline" as const
+    };
+
+    const roleLabels = {
+      admin: "Admin",
+      registration: "Registration", 
+      accounts: "Accounts",
+      sunday_school: "Sunday School",
+      teacher: "Teacher",
+      it: "IT",
+      media: "Media",
+      user: "User"
     };
     
     return (
       <Badge variant={roleColors[userRole as keyof typeof roleColors] || "outline"}>
-        {userRole.charAt(0).toUpperCase() + userRole.slice(1)} Department
+        {roleLabels[userRole as keyof typeof roleLabels] || "User"} Department
       </Badge>
     );
   };
@@ -239,6 +280,41 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">Profile management coming soon...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="give">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ready to Give?</CardTitle>
+                  <CardDescription>Join us in partnership as we advance God's kingdom through your generous giving.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <p className="text-muted-foreground">
+                    Every seed you sow makes an eternal difference. Your faithful giving enables us to fulfill our mission of raising champions for Christ.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8">
+                      <Heart className="h-5 w-5 mr-2" />
+                      GIVE NOW
+                    </Button>
+                    <Button size="lg" variant="outline" className="border-2 font-bold px-8">
+                      LEARN ABOUT GIVING
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="newsletter">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Newsletter Subscription</CardTitle>
+                  <CardDescription>Stay connected with weekly inspiration and church updates</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NewsletterSignup showCard={false} />
                 </CardContent>
               </Card>
             </TabsContent>

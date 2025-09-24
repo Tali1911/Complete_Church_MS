@@ -159,6 +159,42 @@ export type Database = {
         }
         Relationships: []
       }
+      faq_content: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string
+          created_by: string | null
+          display_order: number | null
+          id: string
+          is_published: boolean | null
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_published?: boolean | null
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_published?: boolean | null
+          question?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       media_content: {
         Row: {
           content_data: Json
@@ -219,6 +255,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          member_number: string | null
           phone: string | null
           status: string | null
           updated_at: string | null
@@ -232,6 +269,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          member_number?: string | null
           phone?: string | null
           status?: string | null
           updated_at?: string | null
@@ -245,10 +283,53 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          member_number?: string | null
           phone?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      newsletter_subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          is_active: boolean | null
+          last_email_sent: string | null
+          last_name: string | null
+          subscription_date: string
+          subscription_preferences: Json | null
+          unsubscribe_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_email_sent?: string | null
+          last_name?: string | null
+          subscription_date?: string
+          subscription_preferences?: Json | null
+          unsubscribe_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_email_sent?: string | null
+          last_name?: string | null
+          subscription_date?: string
+          subscription_preferences?: Json | null
+          unsubscribe_token?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -462,6 +543,42 @@ export type Database = {
         }
         Relationships: []
       }
+      social_media_handles: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          handle: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          platform: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          handle: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          platform: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          handle?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          platform?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null
@@ -567,6 +684,51 @@ export type Database = {
         }
         Relationships: []
       }
+      testimonials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          is_published: boolean | null
+          name: string
+          position: string | null
+          testimonial_text: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          name: string
+          position?: string | null
+          testimonial_text: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          name?: string
+          position?: string | null
+          testimonial_text?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       ticket_messages: {
         Row: {
           created_at: string
@@ -628,6 +790,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_member_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -660,6 +826,7 @@ export type Database = {
         | "it"
         | "user"
         | "media"
+        | "marketing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -797,6 +964,7 @@ export const Constants = {
         "it",
         "user",
         "media",
+        "marketing",
       ],
     },
   },

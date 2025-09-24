@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
   AlertTriangle, 
@@ -36,24 +38,36 @@ interface SecurityMetric {
 }
 
 export const ITSecurity = () => {
+  const { toast } = useToast();
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('🔒 ITSecurity: Component mounted, starting initial fetch');
     fetchSecurityEvents();
     const interval = setInterval(fetchSecurityEvents, 60000); // Refresh every minute
     return () => clearInterval(interval);
   }, []);
 
   const fetchSecurityEvents = async () => {
+    console.log('🔒 ITSecurity: Starting to fetch security events...');
+    setLoading(true);
+    setError(null);
     try {
+      console.log('🔒 ITSecurity: Making Supabase query to security_events table');
       const { data, error } = await supabase
         .from('security_events')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ ITSecurity: Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('✅ ITSecurity: Successfully fetched events:', data?.length || 0, 'records');
       
       // Map database fields to component expected format
       const mappedEvents: SecurityEvent[] = (data || []).map(event => ({
@@ -62,12 +76,27 @@ export const ITSecurity = () => {
         action: event.action_taken
       }));
       
+      console.log('🔒 ITSecurity: Mapped events for display:', mappedEvents.length, 'events');
       setSecurityEvents(mappedEvents);
+      
+      toast({
+        title: "Security Update",
+        description: `Loaded ${mappedEvents.length} security events`,
+      });
     } catch (error) {
-      console.error('Error fetching security events:', error);
+      console.error('❌ ITSecurity: Error fetching security events:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(errorMsg);
       setSecurityEvents([]);
+      
+      toast({
+        title: "Error Loading Security Data",
+        description: errorMsg,
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
+      console.log('🔒 ITSecurity: Fetch operation completed');
     }
   };
 
@@ -124,8 +153,19 @@ export const ITSecurity = () => {
           <p className="text-muted-foreground">Monitor and manage system security</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4" />
+          <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-muted">
+            <Shield className="h-4 w-4" />
+            <span className="text-sm">
+              {loading ? 'Scanning...' : error ? 'Security Error' : `${securityEvents.length} events`}
+            </span>
+            <div className={`w-2 h-2 rounded-full ${
+              loading ? 'bg-yellow-500 animate-pulse' : 
+              error ? 'bg-red-500' : 
+              'bg-green-500'
+            }`} />
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchSecurityEvents} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Run Security Scan
           </Button>
           <Button variant="outline" size="sm">
@@ -134,6 +174,15 @@ export const ITSecurity = () => {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load security data: {error}. Security monitoring may be impaired.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Security Score Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -305,23 +354,40 @@ export const ITSecurity = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {securityEvents.map((event) => (
-                    <TableRow key={event.id}>
-                      <TableCell className="font-mono text-sm">
-                        {new Date(event.created_at).toLocaleString()}
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                        <p>Loading security events...</p>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getEventIcon(event.type)}
-                          <span className="capitalize">{event.type}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{event.description}</TableCell>
-                      <TableCell className="font-mono text-sm">{event.source}</TableCell>
-                      <TableCell>{getSeverityBadge(event.severity)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{event.action}</TableCell>
                     </TableRow>
-                  ))}
+                  ) : securityEvents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No security events found</p>
+                        <p className="text-sm">Your system is secure</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    securityEvents.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell className="font-mono text-sm">
+                          {new Date(event.created_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getEventIcon(event.type)}
+                            <span className="capitalize">{event.type}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{event.description}</TableCell>
+                        <TableCell className="font-mono text-sm">{event.source}</TableCell>
+                        <TableCell>{getSeverityBadge(event.severity)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{event.action}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

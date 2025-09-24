@@ -2,7 +2,9 @@
 import { Hero } from "@/components/Hero";
 import { ServiceTimes } from "@/components/ServiceTimes";
 import { LatestSermon } from "@/components/LatestSermon";
+import { Announcements } from "@/components/Announcements";
 import { UpcomingEvents } from "@/components/UpcomingEvents";
+import { Testimonials } from "@/components/Testimonials";
 import { ConnectSection } from "@/components/ConnectSection";
 import { GivingSection } from "@/components/GivingSection";
 import { Navigation } from "@/components/Navigation";
@@ -15,7 +17,9 @@ const Index = () => {
       <Hero />
       <ServiceTimes />
       <LatestSermon />
+      <Announcements />
       <UpcomingEvents />
+      <Testimonials showOnlyFeatured={true} maxItems={3} />
       <ConnectSection />
       <GivingSection />
       <Footer />
