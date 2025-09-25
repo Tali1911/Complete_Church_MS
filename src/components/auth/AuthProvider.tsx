@@ -10,9 +10,11 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, userData: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
   isAuthenticated: boolean;
+  needsProfileCompletion: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
   const { toast } = useToast();
 
   const fetchUserRole = async (userId: string) => {
@@ -83,6 +86,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const checkProfileCompletion = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('phone, address, county')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error || !data) {
+        setNeedsProfileCompletion(true);
+        return;
+      }
+      
+      // Check if required fields are missing
+      const isIncomplete = !data.phone || !data.address || !data.county;
+      setNeedsProfileCompletion(isIncomplete);
+    } catch (error) {
+      console.error('Error checking profile completion:', error);
+      setNeedsProfileCompletion(true);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -94,9 +119,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Defer the role fetch to avoid blocking auth state changes
           setTimeout(() => {
             fetchUserRole(session.user.id);
+            checkProfileCompletion(session.user.id);
           }, 0);
         } else {
           setUserRole(null);
+          setNeedsProfileCompletion(false);
         }
         
         setLoading(false);
@@ -132,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (session?.user) {
         fetchUserRole(session.user.id);
+        checkProfileCompletion(session.user.id);
         setupRoleSubscription(session.user.id);
       }
       
@@ -220,6 +248,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithGoogle = async (): Promise<{ error: any }> => {
+    try {
+      // Create manual popup to completely bypass iframe restrictions
+      const redirectUrl = `${window.location.origin}/`;
+      const supabaseUrl = 'https://zkbeoqskfeyqtyjtpufj.supabase.co';
+      
+      const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+      
+      // Open popup window
+      const popup = window.open(
+        oauthUrl,
+        'google-auth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+      
+      if (!popup) {
+        toast({
+          variant: "destructive",
+          title: "Popup Blocked",
+          description: "Please allow popups for this site to sign in with Google"
+        });
+        return { error: new Error("Popup blocked") };
+      }
+      
+      // Listen for popup close or success
+      return new Promise((resolve) => {
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            // Check if user was signed in after popup closed
+            setTimeout(() => {
+              supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) {
+                  resolve({ error: null });
+                } else {
+                  resolve({ error: new Error("Authentication cancelled") });
+                }
+              });
+            }, 1000);
+          }
+        }, 1000);
+      });
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : 'Google sign-in failed';
+      toast({
+        variant: "destructive",
+        title: "Google Sign-In Error",
+        description: errorMessage
+      });
+      return { error };
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -234,6 +315,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setSession(null);
         setUserRole(null);
+        setNeedsProfileCompletion(false);
         toast({
           title: "Signed Out",
           description: "You have been signed out successfully.",
@@ -255,9 +337,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     refreshRole,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    needsProfileCompletion
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
