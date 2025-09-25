@@ -38,6 +38,17 @@ import { DashboardOverviewStats } from "@/components/dashboard/DashboardOverview
 import { RecentActivityCard } from "@/components/dashboard/RecentActivityCard";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { NewsletterSignup } from "@/components/shared/NewsletterSignup";
+import { JoinFamilyForm } from "@/components/forms/JoinFamilyForm";
+import { MinistriesManager } from "@/components/admin/MinistriesManager";
+import { ServeApplicationsManager } from "@/components/admin/ServeApplicationsManager";
+import { DepartmentInventory } from "@/components/inventory/DepartmentInventory";
+import { AllDepartmentsInventory } from "@/components/inventory/AllDepartmentsInventory";
+import { RequisitionManager } from "@/components/requisitions/RequisitionManager";
+import { GivingAnalysis } from "@/components/accounts/GivingAnalysis";
+import { PastorAvailability } from "@/components/pastor/PastorAvailability";
+import { ActivityLogs } from "@/components/admin/ActivityLogs";
+import { AdvancedAnalytics } from "@/components/founder/AdvancedAnalytics";
+import { BudgetProposals } from "@/components/budget/BudgetProposals";
 
 const Dashboard = () => {
   const { isAuthenticated, userRole: authUserRole, loading, signOut, refreshRole } = useAuth();
@@ -115,17 +126,47 @@ const Dashboard = () => {
 
     const roleTabs = {
       admin: [
+        { value: "ministries", label: "Ministries", icon: Users },
+        { value: "serve-management", label: "Serve Management", icon: UserCheck },
+        { value: "applications", label: "Applications", icon: FileText },
+        { value: "inventory", label: "Inventory", icon: Settings },
         { value: "reports", label: "Reports", icon: FileText },
         { value: "users", label: "User Management", icon: UserCheck },
-        { value: "settings", label: "Settings", icon: Settings },
+      ],
+      founder: [
+        { value: "analytics", label: "Advanced Analytics", icon: Activity },
+        { value: "budget-requests", label: "Budget Requests", icon: DollarSign },
+        { value: "inventory", label: "All Inventory", icon: Settings },
+        { value: "system-overview", label: "System Overview", icon: Monitor },
+        { value: "reports", label: "All Reports", icon: FileText },
+        { value: "users", label: "All Users", icon: Users },
+      ],
+      senior_pastor: [
+        { value: "giving-analysis", label: "Giving Analysis", icon: DollarSign },
+        { value: "budget-review", label: "Budget Review", icon: FileText },
+        { value: "inventory", label: "All Inventory", icon: Settings },
+        { value: "activity-logs", label: "Activity Logs", icon: Activity },
+        { value: "users", label: "All Users", icon: Users },
+      ],
+      pastor: [
+        { value: "availability", label: "My Availability", icon: Calendar },
+        { value: "counseling", label: "Counseling Sessions", icon: Users },
+        { value: "ministries-view", label: "View Ministries", icon: Heart },
+        { value: "serve-view", label: "View Departments", icon: UserCheck },
+        { value: "users", label: "All Users", icon: Users },
       ],
       registration: [
+        { value: "family-applications", label: "Family Applications", icon: FileText },
         { value: "attendance", label: "Attendance", icon: UserCheck },
         { value: "reports", label: "Reports", icon: FileText },
       ],
       accounts: [
+        { value: "giving-records", label: "Record Giving", icon: DollarSign },
+        { value: "giving-analysis", label: "Giving Analysis", icon: Activity },
+        { value: "requisitions", label: "Requisitions", icon: FileText },
+        { value: "budget-create", label: "Create Budget", icon: Settings },
+        { value: "inventory", label: "All Inventory", icon: Settings },
         { value: "contributions", label: "Contributions", icon: DollarSign },
-        { value: "reports", label: "Financial Reports", icon: FileText },
       ],
       sunday_school: [
         { value: "sunday-school", label: "Sunday School", icon: BookOpen },
@@ -142,7 +183,13 @@ const Dashboard = () => {
         { value: "monitoring", label: "System Monitor", icon: Monitor },
         { value: "security", label: "Security", icon: Shield },
       ],
+      media: [],
+      marketing: [],
       user: [
+        { value: "join-family", label: "Join Family", icon: Heart },
+        { value: "apply-ministry", label: "Apply to Ministry", icon: Users },
+        { value: "apply-serve", label: "Apply to Serve", icon: UserCheck },
+        { value: "counseling-book", label: "Book Counseling", icon: Calendar },
         { value: "giving", label: "My Giving", icon: Heart },
         { value: "events", label: "Events", icon: Calendar },
       ]
@@ -154,23 +201,31 @@ const Dashboard = () => {
   const getUserRoleBadge = () => {
     const roleColors = {
       admin: "destructive" as const,
+      founder: "destructive" as const,
+      senior_pastor: "destructive" as const,
+      pastor: "secondary" as const,
       registration: "secondary" as const,
       accounts: "default" as const,
       sunday_school: "default" as const,
       teacher: "secondary" as const,
       it: "destructive" as const,
       media: "default" as const,
+      marketing: "default" as const,
       user: "outline" as const
     };
 
     const roleLabels = {
       admin: "Admin",
+      founder: "Founder",
+      senior_pastor: "Senior Pastor",
+      pastor: "Pastor",
       registration: "Registration", 
       accounts: "Accounts",
       sunday_school: "Sunday School",
       teacher: "Teacher",
       it: "IT",
       media: "Media",
+      marketing: "Marketing",
       user: "User"
     };
     
@@ -307,6 +362,65 @@ const Dashboard = () => {
               </Card>
             </TabsContent>
 
+            <TabsContent value="join-family">
+              <JoinFamilyForm />
+            </TabsContent>
+
+            <TabsContent value="ministries">
+              <MinistriesManager />
+            </TabsContent>
+
+            <TabsContent value="serve-management">
+              <ServeApplicationsManager />
+            </TabsContent>
+
+            <TabsContent value="applications">
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Applications</CardTitle>
+                  <CardDescription>View all pending applications</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Application management coming soon...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="inventory">
+              {userRole === 'admin' || userRole === 'founder' || userRole === 'senior_pastor' || userRole === 'accounts' ? (
+                <AllDepartmentsInventory />
+              ) : (
+                <DepartmentInventory 
+                  departmentId={userRole} 
+                  departmentName={userRole.charAt(0).toUpperCase() + userRole.slice(1)} 
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <AdvancedAnalytics />
+            </TabsContent>
+
+            <TabsContent value="budget-requests">
+              <BudgetProposals userRole={userRole} canReview={true} />
+            </TabsContent>
+
+            <TabsContent value="budget-create">
+              <BudgetProposals userRole={userRole} canCreate={true} />
+            </TabsContent>
+
+            <TabsContent value="counseling-book">
+              <PastorAvailability isPastor={false} />
+            </TabsContent>
+
+            <TabsContent value="apply-ministry">
+              <MinistriesManager />
+            </TabsContent>
+
+            <TabsContent value="apply-serve">
+              <ServeApplicationsManager />
+            </TabsContent>
+
             <TabsContent value="newsletter">
               <Card>
                 <CardHeader>
@@ -318,6 +432,86 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Accounts Role Tabs */}
+            <TabsContent value="giving-records">
+              <FinancialContributions />
+            </TabsContent>
+
+            <TabsContent value="giving-analysis">
+              <GivingAnalysis />
+            </TabsContent>
+
+            <TabsContent value="requisitions">
+              <RequisitionManager />
+            </TabsContent>
+
+            <TabsContent value="budget-review">
+              <BudgetProposals userRole={userRole} canReview={true} />
+            </TabsContent>
+
+            {/* Pastor Role Tabs */}
+            <TabsContent value="availability">
+              <PastorAvailability isPastor={true} />
+            </TabsContent>
+
+            <TabsContent value="counseling">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Counseling Sessions</CardTitle>
+                  <CardDescription>Manage your counseling appointments and notes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Counseling session management coming soon...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="ministries-view">
+              <MinistriesManager />
+            </TabsContent>
+
+            <TabsContent value="serve-view">
+              <ServeApplicationsManager />
+            </TabsContent>
+
+            {/* Senior Pastor & Founder Role Tabs */}
+            <TabsContent value="activity-logs">
+              <ActivityLogs />
+            </TabsContent>
+
+            <TabsContent value="system-overview">
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Overview</CardTitle>
+                  <CardDescription>Complete system status and health monitoring</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <DashboardOverviewStats />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    <RecentActivityCard />
+                    <QuickActionsCard />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="users">
+              <ITUserManagement />
+            </TabsContent>
+
+            <TabsContent value="family-applications">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Family Applications</CardTitle>
+                  <CardDescription>Review and approve family membership applications</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Family application management coming soon...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
           </Tabs>
         </div>
       </div>

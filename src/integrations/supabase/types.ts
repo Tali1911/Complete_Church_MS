@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_category: string
+          event_type: string
+          id: string
+          properties: Json
+          session_id: string | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_category: string
+          event_type: string
+          id?: string
+          properties?: Json
+          session_id?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_category?: string
+          event_type?: string
+          id?: string
+          properties?: Json
+          session_id?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       attendance_records: {
         Row: {
           checked_in_at: string | null
@@ -48,6 +117,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      budget_proposals: {
+        Row: {
+          amount: number
+          created_at: string
+          department_id: string
+          description: string
+          id: string
+          justification: string
+          period_end: string
+          period_start: string
+          proposal_type: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          department_id: string
+          description: string
+          id?: string
+          justification: string
+          period_end: string
+          period_start: string
+          proposal_type?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          department_id?: string
+          description?: string
+          id?: string
+          justification?: string
+          period_end?: string
+          period_start?: string
+          proposal_type?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       church_events: {
         Row: {
@@ -135,6 +261,51 @@ export type Database = {
           },
         ]
       }
+      counseling_sessions: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          member_id: string
+          member_notes: string | null
+          notes: string | null
+          pastor_id: string
+          session_date: string
+          session_type: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          member_id: string
+          member_notes?: string | null
+          notes?: string | null
+          pastor_id: string
+          session_date: string
+          session_type?: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          member_id?: string
+          member_notes?: string | null
+          notes?: string | null
+          pastor_id?: string
+          session_date?: string
+          session_type?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dashboard_stats: {
         Row: {
           created_at: string | null
@@ -156,6 +327,54 @@ export type Database = {
           stat_type?: string
           stat_value?: Json
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      department_inventory: {
+        Row: {
+          category: string | null
+          condition: string | null
+          created_at: string | null
+          department_id: string
+          description: string | null
+          id: string
+          item_name: string
+          location: string | null
+          purchase_date: string | null
+          quantity_available: number | null
+          unit_value: number | null
+          updated_at: string | null
+          warranty_info: string | null
+        }
+        Insert: {
+          category?: string | null
+          condition?: string | null
+          created_at?: string | null
+          department_id: string
+          description?: string | null
+          id?: string
+          item_name: string
+          location?: string | null
+          purchase_date?: string | null
+          quantity_available?: number | null
+          unit_value?: number | null
+          updated_at?: string | null
+          warranty_info?: string | null
+        }
+        Update: {
+          category?: string | null
+          condition?: string | null
+          created_at?: string | null
+          department_id?: string
+          description?: string | null
+          id?: string
+          item_name?: string
+          location?: string | null
+          purchase_date?: string | null
+          quantity_available?: number | null
+          unit_value?: number | null
+          updated_at?: string | null
+          warranty_info?: string | null
         }
         Relationships: []
       }
@@ -192,6 +411,122 @@ export type Database = {
           is_published?: boolean | null
           question?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_transactions: {
+        Row: {
+          created_at: string | null
+          event_date: string | null
+          event_name: string | null
+          handled_by: string
+          id: string
+          inventory_item_id: string
+          notes: string | null
+          quantity: number
+          transaction_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_date?: string | null
+          event_name?: string | null
+          handled_by: string
+          id?: string
+          inventory_item_id: string
+          notes?: string | null
+          quantity: number
+          transaction_type: string
+        }
+        Update: {
+          created_at?: string | null
+          event_date?: string | null
+          event_name?: string | null
+          handled_by?: string
+          id?: string
+          inventory_item_id?: string
+          notes?: string | null
+          quantity?: number
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_inventory_trans_item"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "department_inventory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      join_family_applications: {
+        Row: {
+          address: string | null
+          application_date: string | null
+          baptism_status: string
+          created_at: string | null
+          email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          first_name: string
+          id: string
+          last_name: string
+          ministry_interests: string[] | null
+          notes: string | null
+          phone: string | null
+          previous_church: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          testimony: string | null
+          updated_at: string | null
+          user_id: string
+          volunteer_interests: string[] | null
+        }
+        Insert: {
+          address?: string | null
+          application_date?: string | null
+          baptism_status: string
+          created_at?: string | null
+          email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          ministry_interests?: string[] | null
+          notes?: string | null
+          phone?: string | null
+          previous_church?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          testimony?: string | null
+          updated_at?: string | null
+          user_id: string
+          volunteer_interests?: string[] | null
+        }
+        Update: {
+          address?: string | null
+          application_date?: string | null
+          baptism_status?: string
+          created_at?: string | null
+          email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          ministry_interests?: string[] | null
+          notes?: string | null
+          phone?: string | null
+          previous_church?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          testimony?: string | null
+          updated_at?: string | null
+          user_id?: string
+          volunteer_interests?: string[] | null
         }
         Relationships: []
       }
@@ -291,6 +626,86 @@ export type Database = {
         }
         Relationships: []
       }
+      ministries: {
+        Row: {
+          created_at: string | null
+          current_members: number | null
+          description: string
+          id: string
+          is_active: boolean | null
+          leader_id: string | null
+          location: string | null
+          max_members: number | null
+          meeting_schedule: string | null
+          name: string
+          requirements: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_members?: number | null
+          description: string
+          id?: string
+          is_active?: boolean | null
+          leader_id?: string | null
+          location?: string | null
+          max_members?: number | null
+          meeting_schedule?: string | null
+          name: string
+          requirements?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_members?: number | null
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          leader_id?: string | null
+          location?: string | null
+          max_members?: number | null
+          meeting_schedule?: string | null
+          name?: string
+          requirements?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ministry_members: {
+        Row: {
+          id: string
+          joined_date: string | null
+          ministry_id: string
+          role: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_date?: string | null
+          ministry_id: string
+          role?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_date?: string | null
+          ministry_id?: string
+          role?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_ministry_members_ministry"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string
@@ -362,6 +777,45 @@ export type Database = {
           is_published?: boolean | null
           page_name?: string
           section_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pastor_availability: {
+        Row: {
+          created_at: string
+          day_of_week: string
+          end_time: string
+          id: string
+          is_active: boolean
+          max_sessions: number
+          pastor_id: string
+          session_duration: number
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: string
+          end_time: string
+          id?: string
+          is_active?: boolean
+          max_sessions?: number
+          pastor_id: string
+          session_duration?: number
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: string
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          max_sessions?: number
+          pastor_id?: string
+          session_duration?: number
+          start_time?: string
           updated_at?: string
         }
         Relationships: []
@@ -471,6 +925,63 @@ export type Database = {
         }
         Relationships: []
       }
+      requisitions: {
+        Row: {
+          amount: number | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          department_id: string
+          description: string
+          id: string
+          priority: string
+          reason: string | null
+          request_type: string
+          requested_by: string
+          requested_date: string
+          required_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          department_id: string
+          description: string
+          id?: string
+          priority?: string
+          reason?: string | null
+          request_type: string
+          requested_by: string
+          requested_date?: string
+          required_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          department_id?: string
+          description?: string
+          id?: string
+          priority?: string
+          reason?: string | null
+          request_type?: string
+          requested_by?: string
+          requested_date?: string
+          required_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_events: {
         Row: {
           action_taken: string
@@ -503,6 +1014,53 @@ export type Database = {
           source?: string
         }
         Relationships: []
+      }
+      serve_applications: {
+        Row: {
+          application_date: string | null
+          created_at: string | null
+          department_id: string
+          id: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          application_date?: string | null
+          created_at?: string | null
+          department_id: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          application_date?: string | null
+          created_at?: string | null
+          department_id?: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_serve_applications_dept"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "serve_departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       serve_departments: {
         Row: {
@@ -827,6 +1385,8 @@ export type Database = {
         | "user"
         | "media"
         | "marketing"
+        | "senior_pastor"
+        | "founder"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -965,6 +1525,8 @@ export const Constants = {
         "user",
         "media",
         "marketing",
+        "senior_pastor",
+        "founder",
       ],
     },
   },
