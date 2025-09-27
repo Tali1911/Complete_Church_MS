@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { MarketingDashboardHeader } from "@/components/marketing/MarketingDashboardHeader";
+import { DepartmentInventory } from "@/components/inventory/DepartmentInventory";
+import { RequisitionManager } from "@/components/requisitions/RequisitionManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Users, Star, MessageSquare, Share2, HelpCircle, FileText, Mail } from "lucide-react";
+import { BarChart3, Users, Star, MessageSquare, Share2, HelpCircle, FileText, Mail, Settings } from "lucide-react";
 
 // Marketing management components
 import { AboutUsManager } from "@/components/marketing/AboutUsManager";
@@ -70,15 +72,44 @@ const MarketingDashboard = () => {
           <MarketingDashboardHeader />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="about">About Us</TabsTrigger>
-              <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
-              <TabsTrigger value="filming">Filming</TabsTrigger>
-              <TabsTrigger value="social">Social Media</TabsTrigger>
-              <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
-              <TabsTrigger value="faq">FAQ</TabsTrigger>
-            </TabsList>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-5 lg:grid-cols-9">
+                <TabsTrigger value="overview">
+                  <span className="hidden sm:inline">Overview</span>
+                  <span className="sm:hidden">Home</span>
+                </TabsTrigger>
+                <TabsTrigger value="about">
+                  <span className="hidden sm:inline">About Us</span>
+                  <span className="sm:hidden">About</span>
+                </TabsTrigger>
+                <TabsTrigger value="newsletter">
+                  <span className="hidden sm:inline">Newsletter</span>
+                  <span className="sm:hidden">News</span>
+                </TabsTrigger>
+                <TabsTrigger value="filming" className="hidden sm:flex">Filming</TabsTrigger>
+                <TabsTrigger value="social" className="hidden sm:flex">Social Media</TabsTrigger>
+                <TabsTrigger value="testimonials" className="hidden lg:flex">Testimonials</TabsTrigger>
+                <TabsTrigger value="faq" className="hidden lg:flex">FAQ</TabsTrigger>
+                <TabsTrigger value="requisitions" className="hidden lg:flex">Requisitions</TabsTrigger>
+                <TabsTrigger value="inventory" className="hidden lg:flex">Inventory</TabsTrigger>
+              </TabsList>
+              
+              {/* Mobile dropdown for hidden tabs */}
+              <div className="sm:hidden w-full">
+                <select 
+                  value={activeTab} 
+                  onChange={(e) => setActiveTab(e.target.value)}
+                  className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="filming">Filming</option>
+                  <option value="social">Social Media</option>
+                  <option value="testimonials">Testimonials</option>
+                  <option value="faq">FAQ</option>
+                  <option value="requisitions">Requisitions</option>
+                  <option value="inventory">Inventory</option>
+                </select>
+              </div>
+            </div>
 
             <TabsContent value="overview" className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -134,6 +165,17 @@ const MarketingDashboard = () => {
 
             <TabsContent value="faq">
               <FAQManager />
+            </TabsContent>
+
+            <TabsContent value="requisitions">
+              <RequisitionManager userRole="marketing" departmentId="marketing" />
+            </TabsContent>
+
+            <TabsContent value="inventory">
+              <DepartmentInventory 
+                departmentId="marketing" 
+                departmentName="Marketing" 
+              />
             </TabsContent>
           </Tabs>
           </div>
