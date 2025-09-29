@@ -120,7 +120,7 @@ export const Navigation = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="outline" className="text-white border-white hover:bg-white hover:text-black font-bold" asChild>
+            <Button variant="outline" className="bg-white text-black hover:bg-gray-100 font-bold" asChild>
               <Link to="/auth">SIGN IN</Link>
             </Button>
             <Button className="bg-white text-black hover:bg-gray-100 font-bold" asChild>
