@@ -378,6 +378,71 @@ export type Database = {
         }
         Relationships: []
       }
+      event_registrations: {
+        Row: {
+          county: string | null
+          created_at: string
+          custom_fields: Json | null
+          email: string
+          event_id: string
+          first_name: string
+          id: string
+          last_name: string
+          number_of_attendees: number
+          phone: string | null
+          registered_by: string | null
+          registration_type: string
+          special_requirements: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          county?: string | null
+          created_at?: string
+          custom_fields?: Json | null
+          email: string
+          event_id: string
+          first_name: string
+          id?: string
+          last_name: string
+          number_of_attendees?: number
+          phone?: string | null
+          registered_by?: string | null
+          registration_type?: string
+          special_requirements?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          county?: string | null
+          created_at?: string
+          custom_fields?: Json | null
+          email?: string
+          event_id?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          number_of_attendees?: number
+          phone?: string | null
+          registered_by?: string | null
+          registration_type?: string
+          special_requirements?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "media_content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faq_content: {
         Row: {
           answer: string
@@ -463,6 +528,7 @@ export type Database = {
           address: string | null
           application_date: string | null
           baptism_status: string
+          county: string | null
           created_at: string | null
           email: string
           emergency_contact_name: string | null
@@ -472,6 +538,7 @@ export type Database = {
           last_name: string
           ministry_interests: string[] | null
           notes: string | null
+          occupation: string | null
           phone: string | null
           previous_church: string | null
           reviewed_at: string | null
@@ -486,6 +553,7 @@ export type Database = {
           address?: string | null
           application_date?: string | null
           baptism_status: string
+          county?: string | null
           created_at?: string | null
           email: string
           emergency_contact_name?: string | null
@@ -495,6 +563,7 @@ export type Database = {
           last_name: string
           ministry_interests?: string[] | null
           notes?: string | null
+          occupation?: string | null
           phone?: string | null
           previous_church?: string | null
           reviewed_at?: string | null
@@ -509,6 +578,7 @@ export type Database = {
           address?: string | null
           application_date?: string | null
           baptism_status?: string
+          county?: string | null
           created_at?: string | null
           email?: string
           emergency_contact_name?: string | null
@@ -518,6 +588,7 @@ export type Database = {
           last_name?: string
           ministry_interests?: string[] | null
           notes?: string | null
+          occupation?: string | null
           phone?: string | null
           previous_church?: string | null
           reviewed_at?: string | null
@@ -855,6 +926,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          occupation: string | null
           phone: string | null
           updated_at: string
           user_id: string
@@ -866,6 +938,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          occupation?: string | null
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -877,6 +950,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          occupation?: string | null
           phone?: string | null
           updated_at?: string
           user_id?: string

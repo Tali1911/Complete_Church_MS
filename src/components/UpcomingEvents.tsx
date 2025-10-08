@@ -1,8 +1,9 @@
 
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, MapPin, ArrowRight } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -15,10 +16,11 @@ interface EventContent {
     time?: string;
     location?: string;
     category?: string;
+    enable_rsvp?: boolean;
   };
 }
 
-export const UpcomingEvents = () => {
+const UpcomingEvents = () => {
   const [events, setEvents] = useState<EventContent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -179,10 +181,21 @@ export const UpcomingEvents = () => {
                   </div>
                 </div>
 
-                <Button className="w-full bg-black text-white hover:bg-gray-800 font-bold">
-                  REGISTER NOW
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
+                {event.content_data?.enable_rsvp ? (
+                  <Button asChild className="w-full bg-black text-white hover:bg-gray-800 font-bold">
+                    <Link to={`/events/${event.id}/register`}>
+                      <Users className="h-4 w-4 mr-2" />
+                      REGISTER NOW
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button asChild variant="outline" className="w-full font-bold">
+                    <Link to="/events">
+                      LEARN MORE
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -198,3 +211,5 @@ export const UpcomingEvents = () => {
     </section>
   );
 };
+
+export default UpcomingEvents;
