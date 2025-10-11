@@ -3,6 +3,7 @@ TOT Int – Gathering Place Digital Heart
 Modern React + Vite web app for a church community hub: public site, member portal, and role‑based operational dashboards (media, marketing, registration, admin, pastors, founder). Built with TypeScript, React Router, TanStack Query, Tailwind, and Supabase.
 
 Features
+
 - Public site
   - Hero, latest sermon, announcements, upcoming events, testimonials, connect, giving
   - Pages: About, Watch, Events (+ registration), Give, Shop, Visit Us, Ministries, Partners, Newsletter, FAQ, Notice of Filming, Baptism, Baby Dedication, Prophetic School, Counseling & Mental Health
@@ -23,6 +24,7 @@ Features
   - Route‑level and component‑level lazy loading, React.Suspense with skeletons, sensible query caching
 
 Tech stack
+
 - App: React 18, TypeScript, Vite 5 (SWC)
 - Routing: React Router v6
 - Data: TanStack Query (staleTime/gcTime tuned, retries)
@@ -34,6 +36,7 @@ Tech stack
 - Tooling: ESLint 9, TypeScript 5
 
 Project structure (key paths)
+
 ```
 src/
   main.tsx               # App bootstrap
@@ -50,42 +53,48 @@ src/
 ```
 
 Routing
+
 - Defined in `src/App.tsx` using `BrowserRouter`, `Routes`, `Route`
 - All major pages are lazy‑loaded; unknown routes fall back to `NotFound`
 - Role‑based redirects in `pages/Dashboard.tsx` send users to the correct dashboard
 
 Authentication
+
 - `src/components/auth/AuthProvider.tsx` manages Supabase session, user, and role
 - Roles stored in `user_roles` table; provider prioritizes founder → senior_pastor → admin → it → media → marketing → registration → accounts → sunday_school → teacher → pastor → user
 - Keeps session in localStorage, auto‑refreshes tokens, subscribes to role changes
 
 Supabase configuration
+
 - Client is created in `src/integrations/supabase/client.ts`
 - For production, prefer using environment variables (e.g., `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) and import them in the client; ensure RLS is enabled server‑side
 
 UI/UX patterns
+
 - shadcn/ui components with Tailwind
 - Skeleton loaders shown via Suspense fallbacks for large sections
 - Toasts provided via `Toaster` and `Sonner`
 
 Getting started
-1) Prerequisites
+
+1. Prerequisites
    - Node.js 18+ (recommended) and npm or bun
-2) Install
+2. Install
    - npm: `npm install`
    - bun: `bun install`
-3) Configure (optional but recommended)
+3. Configure (optional but recommended)
    - Create `.env` with:
      - `VITE_SUPABASE_URL=...`
      - `VITE_SUPABASE_ANON_KEY=...`
    - Update `src/integrations/supabase/client.ts` to read from `import.meta.env`
-4) Develop
+4. Develop
    - `npm run dev` → http://localhost:8080
-5) Build & preview
+5. Build & preview
    - `npm run build`
    - `npm run preview`
 
 Scripts
+
 - `dev`: start Vite dev server (port 8080)
 - `build`: production build
 - `build:dev`: development‑mode build
@@ -93,17 +102,21 @@ Scripts
 - `lint`: run ESLint
 
 Deployment
+
 - Static hosting compatible (Vite build output)
 - `public/_redirects` provided (Netlify‑style SPA redirect) – ensure a catch‑all to `index.html` for client routing
 
 Notable components
+
 - `AIAssistant` (`src/components/AIAssistant.tsx`) – accepts `welcomeMessage`, optional `apiEndpoint` or `onSendMessage` callback
 - `AuthProvider` – wraps app, exposes auth methods and role state
 - `Dashboard` – renders role‑aware tabs and handles redirects
 
 Contributing
+
 - Follow existing code style, prefer descriptive names and small components
 - Keep comments focused on non‑obvious rationale; avoid catching errors without handling
 
 License
+
 - Private project. All rights reserved.
