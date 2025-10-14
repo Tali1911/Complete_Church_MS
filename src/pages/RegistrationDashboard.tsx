@@ -1,17 +1,20 @@
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { AttendanceTracker } from "@/components/dashboard/AttendanceTracker";
 import { MemberManagement } from "@/components/registration/MemberManagement";
 import { RegistrationDashboardHeader } from "@/components/registration/RegistrationDashboardHeader";
 import { ReportsOverview } from "@/components/dashboard/ReportsOverview";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Calendar, FileText, UserPlus } from "lucide-react";
+import { Users, Calendar, FileText, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const RegistrationDashboard = () => {
   const { isAuthenticated, userRole, loading } = useAuth();
   const navigate = useNavigate();
+  useInactivityLogout();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -44,6 +47,7 @@ const RegistrationDashboard = () => {
     { value: "attendance", label: "Attendance Tracking", icon: Calendar },
     { value: "members", label: "Member Management", icon: Users },
     { value: "reports", label: "Reports", icon: FileText },
+    { value: "profile", label: "Profile", icon: User },
   ];
 
   return (
@@ -54,7 +58,7 @@ const RegistrationDashboard = () => {
           <RegistrationDashboardHeader />
           
           <Tabs defaultValue="attendance" className="space-y-6">
-            <TabsList className="grid grid-cols-3 w-full max-w-md">
+            <TabsList className="grid grid-cols-4 w-full max-w-2xl">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -76,6 +80,10 @@ const RegistrationDashboard = () => {
 
             <TabsContent value="reports">
               <ReportsOverview />
+            </TabsContent>
+
+            <TabsContent value="profile">
+              <UserProfile />
             </TabsContent>
           </Tabs>
         </div>

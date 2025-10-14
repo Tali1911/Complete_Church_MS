@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -51,11 +52,13 @@ import { AdvancedAnalytics } from "@/components/founder/AdvancedAnalytics";
 import { DemographicsAnalytics } from "@/components/founder/DemographicsAnalytics";
 import { BudgetProposals } from "@/components/budget/BudgetProposals";
 import { DepartmentTabManager } from "@/components/admin/DepartmentTabManager";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 
 const Dashboard = () => {
   const { isAuthenticated, userRole: authUserRole, loading, signOut, refreshRole } = useAuth();
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string>("user");
+  useInactivityLogout();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -353,15 +356,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="profile">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Profile Settings</CardTitle>
-                  <CardDescription>Manage your account information</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Profile management coming soon...</p>
-                </CardContent>
-              </Card>
+              <UserProfile />
             </TabsContent>
 
             <TabsContent value="give">
