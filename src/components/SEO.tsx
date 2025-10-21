@@ -14,7 +14,7 @@ export const SEO = ({
   title, 
   description, 
   canonical, 
-  ogImage = "",
+  ogImage = "https://lovable.dev/opengraph-image-p98pqg.png",
   ogType = "website",
   structuredData,
   keywords
