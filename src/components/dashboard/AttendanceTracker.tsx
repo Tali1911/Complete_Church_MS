@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, Users, Calendar, Check } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Download, Users, Calendar, Check, QrCode, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
+import { AttendanceQRScanner } from "./AttendanceQRScanner";
 
 interface Member {
   id: string;
@@ -103,41 +105,66 @@ export const AttendanceTracker = () => {
   const attendanceRate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
 
   const toggleAttendance = async (memberId: string) => {
-    try {
-      const member = members.find(m => m.id === memberId);
-      if (!member) return;
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
 
-      if (member.isPresent && member.attendance_id) {
+    // Optimistic update - update UI immediately
+    const wasPresent = member.isPresent;
+    const previousAttendanceId = member.attendance_id;
+    
+    setMembers(prevMembers =>
+      prevMembers.map(m =>
+        m.id === memberId
+          ? { ...m, isPresent: !m.isPresent, attendance_id: m.isPresent ? undefined : 'temp' }
+          : m
+      )
+    );
+
+    try {
+      if (wasPresent && previousAttendanceId) {
         // Remove attendance record
         const { error } = await supabase
           .from('attendance_records')
           .delete()
-          .eq('id', member.attendance_id);
+          .eq('id', previousAttendanceId);
 
         if (error) throw error;
       } else {
         // Add attendance record
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('attendance_records')
           .insert({
             member_id: memberId,
             service_date: selectedDate,
             service_type: serviceType,
             checked_in_at: new Date().toISOString()
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
-      }
 
-      // Refresh the data
-      fetchMembersWithAttendance();
-      
-      toast({
-        title: "Success",
-        description: member.isPresent ? "Member marked absent" : "Member marked present",
-      });
+        // Update with real attendance ID
+        if (data) {
+          setMembers(prevMembers =>
+            prevMembers.map(m =>
+              m.id === memberId ? { ...m, attendance_id: data.id } : m
+            )
+          );
+        }
+      }
     } catch (error) {
       console.error('Error toggling attendance:', error);
+      
+      // Revert optimistic update on error
+      setMembers(prevMembers =>
+        prevMembers.map(m =>
+          m.id === memberId
+            ? { ...m, isPresent: wasPresent, attendance_id: previousAttendanceId }
+            : m
+        )
+      );
+      
       toast({
         title: "Error", 
         description: "Failed to update attendance",
@@ -242,6 +269,46 @@ export const AttendanceTracker = () => {
         </Button>
       </div>
 
+      {/* Service Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Service Details</CardTitle>
+          <CardDescription>Configure the service for attendance tracking</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Service Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Service Type</Label>
+              <Select value={serviceType} onValueChange={setServiceType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sunday_service">Sunday Service</SelectItem>
+                  <SelectItem value="wednesday_service">Wednesday Service</SelectItem>
+                  <SelectItem value="friday_service">Friday Service</SelectItem>
+                  <SelectItem value="special_event">Special Event</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button onClick={markAllPresent} variant="outline" className="w-full">
+                Mark All Present
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -292,46 +359,28 @@ export const AttendanceTracker = () => {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Service Details</CardTitle>
-          <CardDescription>Configure the service for attendance tracking</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Service Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Service Type</Label>
-              <Select value={serviceType} onValueChange={setServiceType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sunday_service">Sunday Service</SelectItem>
-                  <SelectItem value="wednesday_service">Wednesday Service</SelectItem>
-                  <SelectItem value="friday_service">Friday Service</SelectItem>
-                  <SelectItem value="special_event">Special Event</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button onClick={markAllPresent} variant="outline" className="w-full">
-                Mark All Present
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Attendance Tracking Modes */}
+      <Tabs defaultValue="qr-scanner" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="qr-scanner" className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            QR Scanner
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            Manual Entry
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
+        <TabsContent value="qr-scanner">
+          <AttendanceQRScanner 
+            selectedDate={selectedDate}
+            serviceType={serviceType}
+          />
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <Card>
         <CardHeader>
           <CardTitle>Member Attendance</CardTitle>
           <CardDescription>Check off members as they arrive</CardDescription>
@@ -397,6 +446,8 @@ export const AttendanceTracker = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

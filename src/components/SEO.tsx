@@ -14,7 +14,7 @@ export const SEO = ({
   title, 
   description, 
   canonical, 
-  ogImage = "https://tot123.netlify.app/favicon.png",
+  ogImage = "https://lovable.dev/opengraph-image-p98pqg.png",
   ogType = "website",
   structuredData,
   keywords

@@ -8,13 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Key, CreditCard, Mail, Phone, MapPin, Briefcase } from "lucide-react";
+import { User, Key, CreditCard, Mail, Phone, MapPin, Briefcase, QrCode, Download, Printer, FileText } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import QRCode from "react-qr-code";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export const UserProfile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [memberNumber, setMemberNumber] = useState<string | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   
   // Profile state
   const [profile, setProfile] = useState({
@@ -60,6 +64,7 @@ export const UserProfile = () => {
           county: data.county || "",
           occupation: data.occupation || "",
         });
+        setQrCodeData(data.qr_code_data || null);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -144,6 +149,181 @@ export const UserProfile = () => {
     }
   };
 
+  const downloadQRCode = async () => {
+    if (!qrCodeData) return;
+
+    try {
+      // Create a temporary canvas to render the QR code
+      const canvas = document.createElement('canvas');
+      const size = 512;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+
+      // Get the SVG element
+      const svgElement = document.querySelector('#qr-code-container svg');
+      if (!svgElement) {
+        throw new Error('QR code SVG not found');
+      }
+
+      // Convert SVG to data URL
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      // Load SVG as image
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      // Draw white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw the QR code
+      ctx.drawImage(img, 0, 0, size, size);
+
+      // Clean up
+      URL.revokeObjectURL(url);
+
+      // Download
+      const link = document.createElement('a');
+      link.download = `qr-code-${memberNumber || 'member'}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+      
+      toast.success("QR code downloaded successfully!");
+    } catch (error) {
+      console.error('Error downloading QR code:', error);
+      toast.error("Failed to download QR code. Please try PDF download instead.");
+    }
+  };
+
+  const downloadQRCodePDF = async () => {
+    if (!qrCodeData) return;
+
+    try {
+      // Get the SVG element
+      const svgElement = document.querySelector('#qr-code-container svg');
+      if (!svgElement) {
+        throw new Error('QR code SVG not found');
+      }
+
+      // Convert SVG to data URL
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      // Load SVG as image
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const qrSize = 80;
+      const x = (pageWidth - qrSize) / 2;
+      
+      // Add QR code
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 512, 512);
+        ctx.drawImage(img, 0, 0, 512, 512);
+        
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', x, 30, qrSize, qrSize);
+      }
+
+      // Add text
+      pdf.setFontSize(20);
+      pdf.text(`${profile.first_name} ${profile.last_name}`, pageWidth / 2, 120, { align: 'center' });
+      
+      if (memberNumber) {
+        pdf.setFontSize(16);
+        pdf.text(memberNumber, pageWidth / 2, 130, { align: 'center' });
+      }
+      
+      pdf.setFontSize(12);
+      pdf.text('Church Member', pageWidth / 2, 140, { align: 'center' });
+
+      // Clean up
+      URL.revokeObjectURL(url);
+
+      // Save PDF
+      pdf.save(`qr-code-${memberNumber || 'member'}.pdf`);
+      
+      toast.success("QR code PDF downloaded successfully!");
+    } catch (error) {
+      console.error('Error downloading QR code PDF:', error);
+      toast.error("Failed to download QR code PDF");
+    }
+  };
+
+  const printQRCode = () => {
+    const printWindow = window.open('', '', 'width=600,height=600');
+    if (!printWindow) return;
+
+    const qrContainer = document.getElementById('qr-code-container');
+    if (!qrContainer) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>QR Code - ${profile.first_name} ${profile.last_name}</title>
+          <style>
+            body { 
+              display: flex; 
+              justify-content: center; 
+              align-items: center; 
+              min-height: 100vh; 
+              margin: 0;
+              font-family: system-ui, -apple-system, sans-serif;
+            }
+            .print-container { 
+              text-align: center; 
+              padding: 40px;
+              border: 2px solid #000;
+            }
+            h2 { margin: 0 0 10px 0; }
+            p { margin: 5px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            ${qrContainer.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
   return (
     <div className="space-y-6">
       {/* Member Number Card */}
@@ -168,10 +348,14 @@ export const UserProfile = () => {
       )}
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
+          </TabsTrigger>
+          <TabsTrigger value="qr-code" className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            My QR Code
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Key className="h-4 w-4" />
@@ -271,6 +455,78 @@ export const UserProfile = () => {
               <Button onClick={handleProfileUpdate} disabled={loading}>
                 {loading ? "Updating..." : "Update Profile"}
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="qr-code">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Attendance QR Code</CardTitle>
+              <CardDescription>
+                Show this QR code at the church entrance for quick attendance marking
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {qrCodeData ? (
+                <>
+                  <div id="qr-code-container" className="bg-white p-8 rounded-lg border-2 border-primary/20 text-center">
+                    <div className="mb-4">
+                      <QRCode
+                        value={qrCodeData}
+                        size={256}
+                        level="H"
+                        className="mx-auto"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xl font-bold text-gray-900">
+                        {profile.first_name} {profile.last_name}
+                      </p>
+                      {memberNumber && (
+                        <p className="text-lg font-mono text-gray-700">
+                          {memberNumber}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-600">Church Member</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button onClick={downloadQRCode} className="flex-1 flex items-center justify-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Download PNG
+                    </Button>
+                    <Button onClick={downloadQRCodePDF} variant="outline" className="flex-1 flex items-center justify-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Download PDF
+                    </Button>
+                    <Button onClick={printQRCode} variant="outline" className="flex-1 flex items-center justify-center gap-2">
+                      <Printer className="h-4 w-4" />
+                      Print
+                    </Button>
+                  </div>
+
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>How to use:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground mt-2 space-y-1">
+                      <li>Save this QR code to your phone or print it</li>
+                      <li>Show it at the church entrance when you arrive</li>
+                      <li>The registration team will scan it to mark your attendance</li>
+                      <li>You can download or print multiple copies</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <QrCode className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    QR code not available. Please contact the registration department.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
