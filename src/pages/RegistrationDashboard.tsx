@@ -10,13 +10,15 @@ import { UserProfile } from "@/components/dashboard/UserProfile";
 import { ImportHistory } from "@/components/registration/ImportHistory";
 import { MemberLinkingManager } from "@/components/registration/MemberLinkingManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Users, Calendar, FileText, User, Upload, Link2, QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const RegistrationDashboard = () => {
   const { isAuthenticated, userRole, loading } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("qr-scanner");
   useInactivityLogout();
 
   useEffect(() => {
@@ -57,59 +59,92 @@ const RegistrationDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
       <Navigation />
-      <div className="pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <RegistrationDashboardHeader />
-          
-          <Tabs defaultValue="qr-scanner" className="space-y-6">
-            <TabsList className="grid grid-cols-7 w-full max-w-5xl">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
+      <SidebarProvider>
+        <div className="min-h-screen bg-background w-full flex pt-16">
+          <Sidebar className="border-r bg-card shadow-sm">
+            <SidebarContent className="overflow-y-auto pb-20">
+              <div className="p-4 border-b bg-card sticky top-0 z-10">
+                <h2 className="text-lg font-semibold text-foreground">Registration Dashboard</h2>
+              </div>
 
-            <TabsContent value="qr-scanner">
-              <AttendanceQRScanner 
-                selectedDate={new Date().toISOString().split('T')[0]}
-                serviceType="sunday_service"
-              />
-            </TabsContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.value;
+                    return (
+                      <SidebarMenuItem key={tab.value}>
+                        <SidebarMenuButton
+                          onClick={() => setActiveTab(tab.value)}
+                          className={isActive ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-accent hover:text-accent-foreground'}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{tab.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
 
-            <TabsContent value="attendance">
-              <AttendanceTracker />
-            </TabsContent>
+        <div className="flex-1 bg-background">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <RegistrationDashboardHeader />
+              
+              <div className="flex items-center gap-4 mb-8">
+                <SidebarTrigger />
+              </div>
 
-            <TabsContent value="members">
-              <MemberManagement />
-            </TabsContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsList className="hidden">
+                  {tabs.map((tab) => (
+                    <TabsTrigger key={tab.value} value={tab.value} />
+                  ))}
+                </TabsList>
 
-            <TabsContent value="import">
-              <ImportHistory />
-            </TabsContent>
+                <TabsContent value="qr-scanner">
+                  <AttendanceQRScanner 
+                    selectedDate={new Date().toISOString().split('T')[0]}
+                    serviceType="sunday_service"
+                  />
+                </TabsContent>
 
-            <TabsContent value="linking">
-              <MemberLinkingManager />
-            </TabsContent>
+                <TabsContent value="attendance">
+                  <AttendanceTracker />
+                </TabsContent>
 
-            <TabsContent value="reports">
-              <ReportsOverview />
-            </TabsContent>
+                <TabsContent value="members">
+                  <MemberManagement />
+                </TabsContent>
 
-            <TabsContent value="profile">
-              <UserProfile />
-            </TabsContent>
-          </Tabs>
+                <TabsContent value="import">
+                  <ImportHistory />
+                </TabsContent>
+
+                <TabsContent value="linking">
+                  <MemberLinkingManager />
+                </TabsContent>
+
+                <TabsContent value="reports">
+                  <ReportsOverview />
+                </TabsContent>
+
+                <TabsContent value="profile">
+                  <UserProfile />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </SidebarProvider>
+    </>
   );
 };
 
