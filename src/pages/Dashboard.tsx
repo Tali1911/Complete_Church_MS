@@ -113,6 +113,10 @@ import { UserProfile } from "@/components/dashboard/UserProfile";
 import { GivingForm } from "@/components/giving/GivingForm";
 import { SavedPaymentMethods } from "@/components/giving/SavedPaymentMethods";
 import { RecurringGivingManager } from "@/components/giving/RecurringGivingManager";
+import { ApplicationStatus } from "@/components/dashboard/ApplicationStatus";
+import { ActivityLogVisibilityManager } from "@/components/admin/ActivityLogVisibilityManager";
+import CounselingSessionsManagement from "@/components/dashboard/CounselingSessionsManagement";
+import PastorCounselingSessions from "@/components/pastor/PastorCounselingSessions";
 
 const Dashboard = () => {
   const { isAuthenticated, userRole: authUserRole, loading, signOut, refreshRole } = useAuth();
@@ -191,6 +195,7 @@ const Dashboard = () => {
       { value: "payment-methods", label: "Payment Methods", icon: CreditCard },
       { value: "profile", label: "Profile", icon: Users },
       { value: "newsletter", label: "Newsletter", icon: Mail },
+      { value: "counseling", label: "Counseling Sessions", icon: Users },
     ];
 
     const roleTabs = {
@@ -207,6 +212,7 @@ const Dashboard = () => {
         { value: "demographics", label: "Demographics", icon: Users },
         { value: "budget-requests", label: "Budget Requests", icon: DollarSign },
         { value: "inventory", label: "All Inventory", icon: Settings },
+        { value: "activity-visibility", label: "Activity Visibility", icon: Shield },
         { value: "system-overview", label: "System Overview", icon: Monitor },
         { value: "reports", label: "All Reports", icon: FileText },
         { value: "users", label: "All Users", icon: Users },
@@ -221,7 +227,6 @@ const Dashboard = () => {
       ],
       pastor: [
         { value: "availability", label: "My Availability", icon: Calendar },
-        { value: "counseling", label: "Counseling Sessions", icon: Users },
         { value: "ministries-view", label: "View Ministries", icon: Heart },
         { value: "serve-view", label: "View Departments", icon: UserCheck },
         { value: "users", label: "All Users", icon: Users },
@@ -393,9 +398,11 @@ const Dashboard = () => {
               <DashboardOverviewStats />
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ApplicationStatus />
                 <RecentActivityCard />
-                <QuickActionsCard />
               </div>
+              
+              <QuickActionsCard />
             </TabsContent>
 
             <TabsContent value="attendance">
@@ -541,6 +548,10 @@ const Dashboard = () => {
               <BudgetProposals userRole={userRole} canReview={true} />
             </TabsContent>
 
+            <TabsContent value="activity-visibility">
+              <ActivityLogVisibilityManager />
+            </TabsContent>
+
             <TabsContent value="budget-create">
               <BudgetProposals userRole={userRole} canCreate={true} />
             </TabsContent>
@@ -592,15 +603,11 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="counseling">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Counseling Sessions</CardTitle>
-                  <CardDescription>Manage your counseling appointments and notes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Counseling session management coming soon...</p>
-                </CardContent>
-              </Card>
+              {userRole === 'pastor' || userRole === 'senior_pastor' ? (
+                <PastorCounselingSessions />
+              ) : (
+                <CounselingSessionsManagement />
+              )}
             </TabsContent>
 
             <TabsContent value="ministries-view">

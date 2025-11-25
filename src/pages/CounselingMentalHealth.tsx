@@ -1,64 +1,64 @@
-/**
- * COUNSELING & MENTAL HEALTH SERVICES PAGE
- * 
- * LANGUAGE/FRAMEWORK: TypeScript + React (TSX)
- * - TypeScript: Type-safe React components
- * - React: Component-based UI framework
- * - Lucide React: Icon library for visual elements
- * 
- * FUNCTIONALITY:
- * Information page about the church's counseling and mental health support services:
- * 
- * SERVICES OFFERED:
- * 1. Individual Counseling:
- *    - One-on-one sessions for anxiety, depression, grief
- *    - Licensed professional counselors
- *    - Biblical counseling approach
- *    - Confidential environment
- *    - Sliding scale fees available
- * 
- * 2. Marriage & Family Counseling:
- *    - Pre-marital counseling
- *    - Marriage enrichment programs
- *    - Family therapy sessions
- *    - Parenting support groups
- * 
- * 3. Support Groups:
- *    - Grief recovery groups
- *    - Addiction recovery support
- *    - Single parents network
- *    - Mental health awareness
- * 
- * CONTACT INFORMATION:
- * - Phone: (555) 123-4567
- * - Email: counseling@tentoftestimony.org
- * - Physical address for in-person appointments
- * 
- * OFFICE HOURS:
- * - Monday-Thursday: 9:00 AM - 7:00 PM
- * - Friday: 9:00 AM - 5:00 PM
- * - Saturday: 10:00 AM - 4:00 PM
- * - Sunday: By appointment only
- * - 24/7 emergency crisis hotline available
- * 
- * KEY FEATURES:
- * - Hero section with overview of whole-person care philosophy
- * - Service cards with detailed descriptions
- * - Appointment scheduling call-to-action buttons
- * - Comprehensive office hours display
- * - Emergency support information
- * 
- * PURPOSE:
- * Promotes mental health services and reduces stigma around counseling by integrating
- * professional mental health care with biblical principles and spiritual support.
- */
+import { useState, useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Users, Calendar, Phone, Mail, MapPin } from "lucide-react";
+import { Heart, Users, Calendar, Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { usePrerequisiteGuard } from "@/hooks/usePrerequisiteCheck";
+import CounselingBookingForm from "@/components/counseling/CounselingBookingForm";
+import UpcomingSessions from "@/components/counseling/UpcomingSessions";
+import { supabase } from "@/integrations/supabase/client";
+
+interface PageContent {
+  hero?: { title: string; subtitle: string; image?: string };
+  about?: { title: string; description: string };
+  services?: { title: string; description: string };
+  quote?: { text: string; author: string };
+  cta?: { title: string; description: string; buttonText: string };
+}
 
 const CounselingMentalHealth = () => {
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [content, setContent] = useState<PageContent>({});
+  const [loading, setLoading] = useState(true);
+  const { checkAccess } = usePrerequisiteGuard("counseling booking");
+
+  useEffect(() => {
+    fetchPageContent();
+  }, []);
+
+  const fetchPageContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('page_content')
+        .select('*')
+        .eq('page_name', 'counseling')
+        .eq('is_published', true);
+
+      if (error) throw error;
+
+      const contentObj: PageContent = {};
+      data?.forEach((item) => {
+        const parsedContent = JSON.parse(item.content);
+        contentObj[item.section_name as keyof PageContent] = parsedContent;
+      });
+
+      setContent(contentObj);
+    } catch (error) {
+      console.error('Error fetching page content:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBookingClick = async () => {
+    const hasAccess = await checkAccess();
+    if (hasAccess) {
+      setBookingDialogOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -67,24 +67,56 @@ const CounselingMentalHealth = () => {
       <section className="py-20 px-4 bg-gradient-to-b from-primary/10 to-background">
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Counseling & Mental Health
+            {content.hero?.title || "Counseling & Mental Health"}
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-            We believe in caring for the whole person - mind, body, and spirit. Our counseling ministry provides professional support and biblical guidance for life's challenges.
+            {content.hero?.subtitle || "We believe in caring for the whole person - mind, body, and spirit. Our counseling ministry provides professional support and biblical guidance for life's challenges."}
           </p>
-          <Button size="lg" className="mr-4">
-            Schedule Appointment
-          </Button>
-          <Button variant="outline" size="lg">
+          
+          <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg" className="mr-4" onClick={handleBookingClick}>
+                <Calendar className="mr-2 h-5 w-5" />
+                {content.cta?.buttonText || "Schedule Appointment"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Book Counseling Session</DialogTitle>
+                <DialogDescription>
+                  Select a date, time, and pastor to schedule your counseling appointment
+                </DialogDescription>
+              </DialogHeader>
+              <CounselingBookingForm onSuccess={() => setBookingDialogOpen(false)} />
+            </DialogContent>
+          </Dialog>
+          
+          <Button variant="outline" size="lg" onClick={() => {
+            document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' });
+          }}>
             Learn More
           </Button>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-16 px-4">
+      {/* Upcoming Sessions Section */}
+      <section className="py-12 px-4 bg-muted/30">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Our Services</h2>
+          <UpcomingSessions />
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section id="services-section" className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            {content.services?.title || "Our Services"}
+          </h2>
+          {content.services?.description && (
+            <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+              {content.services.description}
+            </p>
+          )}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card>
               <CardHeader>
@@ -168,9 +200,23 @@ const CounselingMentalHealth = () => {
                   <MapPin className="h-5 w-5 text-primary" />
                   <span>123 Church Street, Springfield, IL 62701</span>
                 </div>
-                <Button className="w-full mt-4">
-                  Book Appointment Online
-                </Button>
+                <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full mt-4" onClick={handleBookingClick}>
+                      <Clock className="mr-2 h-4 w-4" />
+                      Book Appointment Online
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Book Counseling Session</DialogTitle>
+                      <DialogDescription>
+                        Select a date, time, and pastor to schedule your counseling appointment
+                      </DialogDescription>
+                    </DialogHeader>
+                    <CounselingBookingForm onSuccess={() => setBookingDialogOpen(false)} />
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
 
