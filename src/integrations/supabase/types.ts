@@ -1697,6 +1697,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shop_orders: {
         Row: {
           created_at: string | null
@@ -2022,6 +2058,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wishlist: {
+        Row: {
+          added_at: string
+          id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "media_content"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

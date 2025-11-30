@@ -1,17 +1,20 @@
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Plus, Minus, X, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
+import { ShoppingCart, Plus, Minus, X, Facebook, Instagram, Youtube, Twitter, Heart, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShopCheckout } from "@/components/shop/ShopCheckout";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface Product {
   id: string;
@@ -28,16 +31,37 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  icon?: string;
+}
+
 const Shop = () => {
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set());
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
+    checkAuth();
+    fetchCategories();
     fetchProducts();
+    
+    // Get category from URL
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
     
     // Set up real-time subscription
     const channel = supabase
@@ -60,6 +84,127 @@ const Shop = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    if (user) {
+      fetchWishlist();
+    }
+  };
+
+  const fetchWishlist = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('wishlist')
+        .select('product_id');
+
+      if (error) throw error;
+      
+      const wishlistSet = new Set(data?.map(item => item.product_id) || []);
+      setWishlistItems(wishlistSet);
+    } catch (error) {
+      console.error('Error fetching wishlist:', error);
+    }
+  };
+
+  const isInWishlist = (productId: string) => {
+    return wishlistItems.has(productId);
+  };
+
+  const toggleWishlist = async (productId: string) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to save items to your wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (isInWishlist(productId)) {
+        // Remove from wishlist
+        const { error } = await supabase
+          .from('wishlist')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', productId);
+
+        if (error) throw error;
+
+        setWishlistItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+
+        toast({
+          title: "Removed from wishlist",
+          description: "Item removed from your wishlist",
+        });
+      } else {
+        // Add to wishlist
+        const { error } = await supabase
+          .from('wishlist')
+          .insert({
+            user_id: user.id,
+            product_id: productId,
+          });
+
+        if (error) throw error;
+
+        setWishlistItems(prev => new Set([...prev, productId]));
+
+        toast({
+          title: "Added to wishlist",
+          description: "Item saved to your wishlist",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error toggling wishlist:', error);
+      if (error.code === '23505') {
+        toast({
+          title: "Already in wishlist",
+          description: "This item is already in your wishlist",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update wishlist",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shop_categories')
+        .select('id, name, slug, icon')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+      } else {
+        setCategories(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const handleCategoryChange = (categorySlug: string) => {
+    setSelectedCategory(categorySlug);
+    if (categorySlug === 'all') {
+      searchParams.delete('category');
+    } else {
+      searchParams.set('category', categorySlug);
+    }
+    setSearchParams(searchParams);
+  };
 
   const fetchProducts = async () => {
     try {
@@ -149,6 +294,27 @@ const Shop = () => {
   ];
 
   const displayProducts = products.length > 0 ? products : defaultProducts;
+  
+  const filteredProducts = displayProducts.filter(product => {
+    // Filter by category
+    const matchesCategory = selectedCategory === 'all' || 
+      product.category.toLowerCase().replace(/\s+/g, '-') === selectedCategory;
+    
+    // Filter by search term
+    const matchesSearch = !searchTerm || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return matchesCategory && matchesSearch;
+  });
+
+  const getCategoryCount = (categorySlug: string) => {
+    if (categorySlug === 'all') return displayProducts.length;
+    return displayProducts.filter(product => {
+      const slug = product.category.toLowerCase().replace(/\s+/g, '-');
+      return slug === categorySlug;
+    }).length;
+  };
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
@@ -243,11 +409,66 @@ const Shop = () => {
           </div>
         </section>
 
+        {/* Search and Category Filter */}
+        <section className="py-6 bg-muted/20 border-y">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search products by name or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex space-x-2">
+                <Button
+                  variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                  onClick={() => handleCategoryChange('all')}
+                  className="shrink-0"
+                >
+                  All Products
+                  <Badge variant="secondary" className="ml-2">
+                    {getCategoryCount('all')}
+                  </Badge>
+                </Button>
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategory === category.slug ? 'default' : 'outline'}
+                    onClick={() => handleCategoryChange(category.slug)}
+                    className="shrink-0"
+                  >
+                    {category.name}
+                    <Badge variant="secondary" className="ml-2">
+                      {getCategoryCount(category.slug)}
+                    </Badge>
+                  </Button>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+        </section>
+
         {/* Products Grid */}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold">Kingdom Resources</h2>
+              <div>
+                <h2 className="text-3xl font-bold">Kingdom Resources</h2>
+                <p className="text-muted-foreground mt-1">
+                  {selectedCategory === 'all' 
+                    ? `Showing all ${filteredProducts.length} products`
+                    : `${filteredProducts.length} ${categories.find(c => c.slug === selectedCategory)?.name || 'products'}`
+                  }
+                </p>
+              </div>
               
               {/* Cart Button */}
               <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
@@ -361,16 +582,41 @@ const Shop = () => {
                   </Card>
                 ))}
               </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <ShoppingCart className="mx-auto h-16 w-16 text-muted-foreground" />
+                <h3 className="mt-4 text-xl font-semibold">No products found</h3>
+                <p className="mt-2 text-muted-foreground">
+                  There are no products in this category yet
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => handleCategoryChange('all')}
+                >
+                  View All Products
+                </Button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayProducts.map((product) => (
+                {filteredProducts.map((product) => (
                   <Card key={product.id} className="overflow-hidden">
-                    <CardHeader className="p-0">
+                    <CardHeader className="p-0 relative">
                       <img
                         src={product.image}
                         alt={product.name}
                         className="h-48 w-full object-cover"
                       />
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={() => toggleWishlist(product.id)}
+                      >
+                        <Heart 
+                          className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`}
+                        />
+                      </Button>
                     </CardHeader>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-2">
