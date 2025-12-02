@@ -117,6 +117,11 @@ import { ApplicationStatus } from "@/components/dashboard/ApplicationStatus";
 import { ActivityLogVisibilityManager } from "@/components/admin/ActivityLogVisibilityManager";
 import CounselingSessionsManagement from "@/components/dashboard/CounselingSessionsManagement";
 import PastorCounselingSessions from "@/components/pastor/PastorCounselingSessions";
+import { ProgramManagement } from "@/components/pastor/ProgramManagement";
+import { ProgramApplicationsManager } from "@/components/pastor/ProgramApplicationsManager";
+import { ProgramResourcesEditor } from "@/components/pastor/ProgramResourcesEditor";
+import { ProgramQuestionsEditor } from "@/components/pastor/ProgramQuestionsEditor";
+import { CandidateProgressViewer } from "@/components/pastor/CandidateProgressViewer";
 
 const Dashboard = () => {
   const { isAuthenticated, userRole: authUserRole, loading, signOut, refreshRole } = useAuth();
@@ -200,6 +205,7 @@ const Dashboard = () => {
 
     const roleTabs = {
       admin: [
+        { value: "programs", label: "Programs", icon: BookOpen },
         { value: "ministries", label: "Ministries", icon: Users },
         { value: "serve-management", label: "Serve Management", icon: UserCheck },
         { value: "applications", label: "Applications", icon: FileText },
@@ -208,6 +214,7 @@ const Dashboard = () => {
         { value: "users", label: "User Management", icon: UserCheck },
       ],
       founder: [
+        { value: "programs", label: "Programs", icon: BookOpen },
         { value: "analytics", label: "Advanced Analytics", icon: Activity },
         { value: "demographics", label: "Demographics", icon: Users },
         { value: "budget-requests", label: "Budget Requests", icon: DollarSign },
@@ -218,6 +225,7 @@ const Dashboard = () => {
         { value: "users", label: "All Users", icon: Users },
       ],
       senior_pastor: [
+        { value: "programs", label: "Programs", icon: BookOpen },
         { value: "demographics", label: "Demographics", icon: Users },
         { value: "giving-analysis", label: "Giving Analysis", icon: DollarSign },
         { value: "budget-review", label: "Budget Review", icon: FileText },
@@ -226,6 +234,7 @@ const Dashboard = () => {
         { value: "users", label: "All Users", icon: Users },
       ],
       pastor: [
+        { value: "programs", label: "Programs", icon: BookOpen },
         { value: "availability", label: "My Availability", icon: Calendar },
         { value: "ministries-view", label: "View Ministries", icon: Heart },
         { value: "serve-view", label: "View Departments", icon: UserCheck },
@@ -269,6 +278,7 @@ const Dashboard = () => {
         { value: "reports", label: "Reports", icon: FileText },
       ],
       it: [
+        { value: "programs", label: "Programs", icon: BookOpen },
         { value: "user-management", label: "User Management", icon: Users },
         { value: "system-logs", label: "System Logs", icon: Activity },
         { value: "ticketing", label: "Support Tickets", icon: Ticket },
@@ -598,6 +608,23 @@ const Dashboard = () => {
             </TabsContent>
 
             {/* Pastor Role Tabs */}
+            <TabsContent value="programs">
+              <Tabs defaultValue="manage">
+                <TabsList>
+                  <TabsTrigger value="manage">Manage Programs</TabsTrigger>
+                  <TabsTrigger value="applications">Applications</TabsTrigger>
+                  <TabsTrigger value="resources">Resources</TabsTrigger>
+                  <TabsTrigger value="questions">Questions</TabsTrigger>
+                  <TabsTrigger value="progress">Progress</TabsTrigger>
+                </TabsList>
+                <TabsContent value="manage"><ProgramManagement /></TabsContent>
+                <TabsContent value="applications"><ProgramApplicationsManager /></TabsContent>
+                <TabsContent value="resources"><ProgramResourcesEditor /></TabsContent>
+                <TabsContent value="questions"><ProgramQuestionsEditor /></TabsContent>
+                <TabsContent value="progress"><CandidateProgressViewer /></TabsContent>
+              </Tabs>
+            </TabsContent>
+
             <TabsContent value="availability">
               <PastorAvailability isPastor={true} />
             </TabsContent>
