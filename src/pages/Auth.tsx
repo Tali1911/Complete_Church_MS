@@ -23,8 +23,11 @@ const kenyaCounties = [
   "Trans Nzoia", "Turkana", "Uasin Gishu", "Vihiga", "Wajir", "West Pokot"
 ];
 
+// Recovery mode storage key - must match AuthProvider
+const RECOVERY_STORAGE_KEY = 'password_recovery_mode';
+
 const Auth = () => {
-  const { signIn, signUp, signInWithGoogle, isAuthenticated, needsProfileCompletion } = useAuth();
+  const { signIn, signUp, signInWithGoogle, isAuthenticated, needsProfileCompletion, isPasswordRecovery, clearPasswordRecovery } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -32,28 +35,40 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
-  const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  
+  // Initialize from sessionStorage - set by index.html BEFORE any JS loads
+  const [resetPasswordMode, setResetPasswordMode] = useState(() => {
+    const stored = sessionStorage.getItem(RECOVERY_STORAGE_KEY) === 'true';
+    console.log('[Auth] Recovery mode on mount:', stored || isPasswordRecovery);
+    return stored || isPasswordRecovery;
+  });
 
-  // Check for password reset mode from URL
+  // Also update resetPasswordMode when isPasswordRecovery changes
   useEffect(() => {
-    const type = searchParams.get('type');
-    const accessToken = searchParams.get('access_token');
-    
-    if (type === 'recovery' || accessToken) {
+    if (isPasswordRecovery) {
       setResetPasswordMode(true);
     }
-  }, [searchParams]);
+  }, [isPasswordRecovery]);
 
-  // Redirect authenticated users
+  // Redirect authenticated users - but NEVER if in recovery mode
   useEffect(() => {
-    if (isAuthenticated && !resetPasswordMode) {
+    // Check sessionStorage directly as well for extra safety
+    const storedRecovery = sessionStorage.getItem(RECOVERY_STORAGE_KEY) === 'true';
+    
+    // Skip ALL redirects if ANY recovery indicator is true
+    if (isPasswordRecovery || resetPasswordMode || storedRecovery) {
+      console.log('Blocking redirect - in password recovery mode');
+      return;
+    }
+    
+    if (isAuthenticated) {
       if (needsProfileCompletion) {
         navigate('/auth/complete-profile');
       } else {
         navigate('/dashboard');
       }
     }
-  }, [isAuthenticated, needsProfileCompletion, navigate, resetPasswordMode]);
+  }, [isAuthenticated, needsProfileCompletion, navigate, resetPasswordMode, isPasswordRecovery]);
 
   // Login form state
   const [loginForm, setLoginForm] = useState({
@@ -240,9 +255,12 @@ const Auth = () => {
           title: "Password Updated",
           description: "Your password has been successfully reset. You can now sign in.",
         });
+        // Clear ALL recovery state
+        clearPasswordRecovery();
         setResetPasswordMode(false);
         setResetPasswordForm({ password: '', confirmPassword: '' });
-        // Clear URL params
+        // Sign out user and redirect to login
+        await supabase.auth.signOut();
         navigate('/auth', { replace: true });
       }
     } catch (error) {
@@ -469,19 +487,22 @@ const Auth = () => {
                           disabled={isLoading}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           )}
                         </Button>
                       </div>
+                    </div>
+
+                    <div className="flex justify-end">
                       <Button
                         type="button"
                         variant="link"
-                        className="px-0 h-auto text-sm text-muted-foreground hover:text-primary"
+                        className="px-0 text-sm"
                         onClick={() => setForgotPasswordMode(true)}
                       >
-                        Forgot your password?
+                        Forgot password?
                       </Button>
                     </div>
 
@@ -489,19 +510,17 @@ const Auth = () => {
                       {isLoading ? "Signing in..." : "Sign In"}
                     </Button>
 
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <Separator className="w-full" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                      </div>
+                    <div className="relative my-4">
+                      <Separator />
+                      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                        OR
+                      </span>
                     </div>
 
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="w-full" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
                       onClick={handleGoogleSignIn}
                       disabled={isLoading}
                     >
@@ -533,25 +552,26 @@ const Auth = () => {
                 <CardHeader className="space-y-1 pb-4">
                   <CardTitle className="text-2xl text-center">Join Our Family</CardTitle>
                   <CardDescription className="text-center">
-                    Create your account and become part of our church community.
+                    Create an account to become part of our community
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">
-                          <User className="inline h-4 w-4 mr-1" />
-                          First Name
-                        </Label>
-                        <Input
-                          id="firstName"
-                          placeholder="John"
-                          value={signUpForm.firstName}
-                          onChange={(e) => setSignUpForm({ ...signUpForm, firstName: e.target.value })}
-                          required
-                          disabled={isLoading}
-                        />
+                        <Label htmlFor="firstName">First Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="firstName"
+                            placeholder="John"
+                            value={signUpForm.firstName}
+                            onChange={(e) => setSignUpForm({ ...signUpForm, firstName: e.target.value })}
+                            className="pl-9"
+                            required
+                            disabled={isLoading}
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last Name</Label>
@@ -567,7 +587,7 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email Address</Label>
+                      <Label htmlFor="signup-email">Email</Label>
                       <Input
                         id="signup-email"
                         type="email"
@@ -580,40 +600,42 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">
-                        <Phone className="inline h-4 w-4 mr-1" />
-                        Phone Number
-                      </Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+254 700 000 000"
-                        value={signUpForm.phone}
-                        onChange={(e) => setSignUpForm({ ...signUpForm, phone: e.target.value })}
-                        required
-                        disabled={isLoading}
-                      />
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="+254 700 000 000"
+                          value={signUpForm.phone}
+                          onChange={(e) => setSignUpForm({ ...signUpForm, phone: e.target.value })}
+                          className="pl-9"
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="address">
-                        <MapPin className="inline h-4 w-4 mr-1" />
-                        Address
-                      </Label>
-                      <Input
-                        id="address"
-                        placeholder="Your residential address"
-                        value={signUpForm.address}
-                        onChange={(e) => setSignUpForm({ ...signUpForm, address: e.target.value })}
-                        required
-                        disabled={isLoading}
-                      />
+                      <Label htmlFor="address">Address</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="address"
+                          placeholder="Your address"
+                          value={signUpForm.address}
+                          onChange={(e) => setSignUpForm({ ...signUpForm, address: e.target.value })}
+                          className="pl-9"
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="county">County (Kenya)</Label>
-                      <Select 
-                        value={signUpForm.county} 
+                      <Label htmlFor="county">County</Label>
+                      <Select
+                        value={signUpForm.county}
                         onValueChange={(value) => setSignUpForm({ ...signUpForm, county: value })}
                         disabled={isLoading}
                       >
@@ -636,7 +658,7 @@ const Auth = () => {
                         <Input
                           id="signup-password"
                           type={showPassword ? "text" : "password"}
-                          placeholder="Create a strong password"
+                          placeholder="Create a password"
                           value={signUpForm.password}
                           onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
                           required
@@ -651,9 +673,9 @@ const Auth = () => {
                           disabled={isLoading}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           )}
                         </Button>
                       </div>
@@ -682,19 +704,17 @@ const Auth = () => {
                       {isLoading ? "Creating Account..." : "Create Account"}
                     </Button>
 
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <Separator className="w-full" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or sign up with</span>
-                      </div>
+                    <div className="relative my-4">
+                      <Separator />
+                      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                        OR
+                      </span>
                     </div>
 
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="w-full" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
                       onClick={handleGoogleSignIn}
                       disabled={isLoading}
                     >
@@ -716,7 +736,7 @@ const Auth = () => {
                           fill="#EA4335"
                         />
                       </svg>
-                      Sign up with Google
+                      Continue with Google
                     </Button>
                   </form>
                 </CardContent>

@@ -3,6 +3,15 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Storage key for password recovery mode - set by index.html before any JS loads
+const RECOVERY_STORAGE_KEY = 'password_recovery_mode';
+
+// Simple helper to check sessionStorage - the index.html script sets this BEFORE Supabase loads
+const isRecoveryModeActive = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return sessionStorage.getItem(RECOVERY_STORAGE_KEY) === 'true';
+};
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -15,6 +24,8 @@ interface AuthContextType {
   refreshRole: () => Promise<void>;
   isAuthenticated: boolean;
   needsProfileCompletion: boolean;
+  isPasswordRecovery: boolean;
+  clearPasswordRecovery: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,7 +44,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
+  // Check sessionStorage - this is set by index.html before Supabase can clear the hash
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(isRecoveryModeActive);
   const { toast } = useToast();
+
+  const clearPasswordRecovery = () => {
+    setIsPasswordRecovery(false);
+    sessionStorage.removeItem(RECOVERY_STORAGE_KEY);
+  };
 
   const fetchUserRole = async (userId: string) => {
     try {
@@ -120,7 +138,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log('Auth event:', event);
+        
+        // Handle PASSWORD_RECOVERY event - set flag to prevent redirect
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('Password recovery detected via event');
+          setIsPasswordRecovery(true);
+          sessionStorage.setItem(RECOVERY_STORAGE_KEY, 'true');
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -360,7 +387,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     refreshRole,
     isAuthenticated: !!user,
-    needsProfileCompletion
+    needsProfileCompletion,
+    isPasswordRecovery,
+    clearPasswordRecovery
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
