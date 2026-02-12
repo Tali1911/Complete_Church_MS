@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, BookOpen, Clock, AlertCircle, Loader2 } from "lucide-react";
+import { Download, BookOpen, Clock, AlertCircle, Loader2, ShoppingBag } from "lucide-react";
 import { format } from "date-fns";
+import { EmbeddedShop } from "@/components/shop/EmbeddedShop";
 
 interface DigitalPurchase {
   id: string;
@@ -27,6 +28,7 @@ export const MyDownloads = () => {
   const [downloads, setDownloads] = useState<DigitalPurchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [showShop, setShowShop] = useState(false);
 
   useEffect(() => {
     fetchDownloads();
@@ -61,29 +63,59 @@ export const MyDownloads = () => {
   const handleDownload = async (purchase: DigitalPurchase) => {
     setDownloadingId(purchase.id);
     try {
-      const { data, error } = await supabase.functions.invoke('deliver-digital-product', {
-        body: {
-          action: 'get_download_url',
-          accessToken: purchase.access_token
+      // Use fetch directly to get blob response
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deliver-digital-product`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'download_file',
+            accessToken: purchase.access_token
+          })
         }
-      });
+      );
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast.error(data.error);
+      // Check if response is JSON (error) or blob (file)
+      const contentType = response.headers.get('Content-Type');
+      
+      if (contentType?.includes('application/json')) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to download');
         return;
       }
 
-      // Open download URL in new tab
-      window.open(data.download_url, '_blank');
-      toast.success(`Downloading ${data.product_title}`);
+      if (!response.ok) {
+        toast.error('Failed to download file');
+        return;
+      }
+
+      // Get filename from header or use product title
+      const filename = response.headers.get('X-Filename') || `${purchase.media_content?.title || 'download'}.pdf`;
+
+      // Create blob and trigger download
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Downloaded ${purchase.media_content?.title || 'file'}`);
       
       // Refresh to update download count
       await fetchDownloads();
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('Failed to generate download link');
+      toast.error('Failed to download file');
     } finally {
       setDownloadingId(null);
     }
@@ -116,6 +148,11 @@ export const MyDownloads = () => {
     );
   }
 
+  // Show embedded shop when Browse Shop is clicked
+  if (showShop) {
+    return <EmbeddedShop onClose={() => setShowShop(false)} />;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -135,7 +172,8 @@ export const MyDownloads = () => {
             <p className="mt-2 text-muted-foreground">
               Purchase digital books from our shop to access them here
             </p>
-            <Button className="mt-4" onClick={() => window.location.href = '/shop'}>
+            <Button className="mt-4" onClick={() => setShowShop(true)}>
+              <ShoppingBag className="h-4 w-4 mr-2" />
               Browse Shop
             </Button>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ShopCheckout } from "@/components/shop/ShopCheckout";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+const CART_STORAGE_KEY = 'shop_cart';
 interface Product {
   id: string;
   name: string;
@@ -35,11 +37,14 @@ interface Category {
   icon?: string;
 }
 const Shop = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    // Initialize cart from localStorage
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -49,6 +54,11 @@ const Shop = () => {
   const [loading, setLoading] = useState(true);
   const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set());
   const [user, setUser] = useState<any>(null);
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  }, [cart]);
   useEffect(() => {
     checkAuth();
     fetchCategories();
@@ -91,7 +101,7 @@ const Shop = () => {
         error
       } = await supabase.from('wishlist').select('product_id');
       if (error) throw error;
-      const wishlistSet = new Set(data?.map(item => item.product_id) || []);
+      const wishlistSet = new Set(data?.map((item) => item.product_id) || []);
       setWishlistItems(wishlistSet);
     } catch (error) {
       console.error('Error fetching wishlist:', error);
@@ -116,7 +126,7 @@ const Shop = () => {
           error
         } = await supabase.from('wishlist').delete().eq('user_id', user.id).eq('product_id', productId);
         if (error) throw error;
-        setWishlistItems(prev => {
+        setWishlistItems((prev) => {
           const newSet = new Set(prev);
           newSet.delete(productId);
           return newSet;
@@ -134,7 +144,7 @@ const Shop = () => {
           product_id: productId
         });
         if (error) throw error;
-        setWishlistItems(prev => new Set([...prev, productId]));
+        setWishlistItems((prev) => new Set([...prev, productId]));
         toast({
           title: "Added to wishlist",
           description: "Item saved to your wishlist"
@@ -193,7 +203,7 @@ const Shop = () => {
       if (error) {
         console.error('Error fetching products:', error);
       } else {
-        const formattedProducts = data?.map(item => {
+        const formattedProducts = data?.map((item) => {
           const contentData = item.content_data as any;
           return {
             id: item.id,
@@ -261,9 +271,19 @@ const Shop = () => {
     category: "Accessories"
   }];
   const displayProducts = products.length > 0 ? products : defaultProducts;
-  const filteredProducts = displayProducts.filter(product => {
+  // Helper to normalize category name to slug format
+  const normalizeCategoryToSlug = (category: string) => {
+    return category.toLowerCase().
+    replace(/&/g, '').
+    replace(/\s+/g, '-').
+    replace(/-+/g, '-').
+    replace(/^-|-$/g, '');
+  };
+
+  const filteredProducts = displayProducts.filter((product) => {
     // Filter by category
-    const matchesCategory = selectedCategory === 'all' || product.category.toLowerCase().replace(/\s+/g, '-') === selectedCategory;
+    const productSlug = normalizeCategoryToSlug(product.category);
+    const matchesCategory = selectedCategory === 'all' || productSlug === selectedCategory;
 
     // Filter by search term
     const matchesSearch = !searchTerm || product.name.toLowerCase().includes(searchTerm.toLowerCase()) || product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -271,16 +291,16 @@ const Shop = () => {
   });
   const getCategoryCount = (categorySlug: string) => {
     if (categorySlug === 'all') return displayProducts.length;
-    return displayProducts.filter(product => {
-      const slug = product.category.toLowerCase().replace(/\s+/g, '-');
+    return displayProducts.filter((product) => {
+      const slug = normalizeCategoryToSlug(product.category);
       return slug === categorySlug;
     }).length;
   };
   const addToCart = (product: Product) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
-        return prevCart.map(item => item.id === product.id ? {
+        return prevCart.map((item) => item.id === product.id ? {
           ...item,
           quantity: item.quantity + 1
         } : item);
@@ -292,14 +312,14 @@ const Shop = () => {
     });
   };
   const removeFromCart = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity === 0) {
       removeFromCart(productId);
       return;
     }
-    setCart(prevCart => prevCart.map(item => item.id === productId ? {
+    setCart((prevCart) => prevCart.map((item) => item.id === productId ? {
       ...item,
       quantity: newQuantity
     } : item));
@@ -312,12 +332,27 @@ const Shop = () => {
   };
   const handleCheckoutComplete = () => {
     setCart([]);
+    localStorage.removeItem(CART_STORAGE_KEY);
     setIsCartOpen(false);
     setIsCheckoutOpen(false);
     toast({
       title: "Order Placed Successfully!",
       description: "Thank you for your purchase"
     });
+  };
+
+  const handleProceedToCheckout = () => {
+    if (!user) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to complete your purchase",
+        variant: "destructive"
+      });
+      navigate('/auth?returnTo=/shop');
+      return;
+    }
+    setIsCartOpen(false);
+    setIsCheckoutOpen(true);
   };
   const socialLinks = [{
     icon: Facebook,
@@ -361,12 +396,12 @@ const Shop = () => {
 
         {/* Search and Category Filter */}
         <section className="py-6 bg-muted/20 border-y">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-[20px]">
             {/* Search Bar */}
             <div className="mb-4">
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input type="text" placeholder="Search products by name or description..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                <Input type="text" placeholder="Search products by name or description..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
             </div>
             <ScrollArea className="w-full whitespace-nowrap">
@@ -377,7 +412,7 @@ const Shop = () => {
                     {getCategoryCount('all')}
                   </Badge>
                 </Button>
-                {categories.map(category => <Button key={category.id} variant={selectedCategory === category.slug ? 'default' : 'outline'} onClick={() => handleCategoryChange(category.slug)} className="shrink-0">
+                {categories.map((category) => <Button key={category.id} variant={selectedCategory === category.slug ? 'default' : 'outline'} onClick={() => handleCategoryChange(category.slug)} className="shrink-0">
                     {category.name}
                     <Badge variant="secondary" className="ml-2">
                       {getCategoryCount(category.slug)}
@@ -396,7 +431,7 @@ const Shop = () => {
               <div>
                 <h2 className="text-3xl font-bold">Kingdom Resources</h2>
                 <p className="text-muted-foreground mt-1">
-                  {selectedCategory === 'all' ? `Showing all ${filteredProducts.length} products` : `${filteredProducts.length} ${categories.find(c => c.slug === selectedCategory)?.name || 'products'}`}
+                  {selectedCategory === 'all' ? `Showing all ${filteredProducts.length} products` : `${filteredProducts.length} ${categories.find((c) => c.slug === selectedCategory)?.name || 'products'}`}
                 </p>
               </div>
               
@@ -419,7 +454,7 @@ const Shop = () => {
                   </SheetHeader>
                   
                   <div className="mt-6 space-y-4">
-                    {cart.map(item => <div key={item.id} className="flex items-center space-x-4">
+                    {cart.map((item) => <div key={item.id} className="flex items-center space-x-4">
                         <img src={item.image} alt={item.name} className="h-12 w-12 rounded-md object-cover" />
                         <div className="flex-1">
                           <h4 className="font-medium">{item.name}</h4>
@@ -447,10 +482,7 @@ const Shop = () => {
                           <span>Total:</span>
                           <span>KSh {getTotalPrice().toFixed(2)}</span>
                         </div>
-                        <Button className="w-full" size="lg" onClick={() => {
-                      setIsCartOpen(false);
-                      setIsCheckoutOpen(true);
-                    }}>
+                        <Button className="w-full" size="lg" onClick={handleProceedToCheckout}>
                           Proceed to Checkout
                         </Button>
                       </div>
@@ -462,7 +494,7 @@ const Shop = () => {
       <ShopCheckout open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen} cartItems={cart} onCheckoutComplete={handleCheckoutComplete} />
             
             {loading ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map(i => <Card key={i} className="overflow-hidden">
+                {[1, 2, 3, 4, 5, 6].map((i) => <Card key={i} className="overflow-hidden">
                     <CardHeader className="p-0">
                       <Skeleton className="h-48 w-full" />
                     </CardHeader>
@@ -488,17 +520,17 @@ const Shop = () => {
                   View All Products
                 </Button>
               </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map(product => <Card key={product.id} className="overflow-hidden">
+                {filteredProducts.map((product) => <Card key={product.id} className="overflow-hidden">
                     <CardHeader className="p-0 relative">
                       <img src={product.image} alt={product.name} className="h-48 w-full object-cover" />
                       <Button variant="secondary" size="icon" className="absolute top-2 right-2" onClick={() => toggleWishlist(product.id)}>
                         <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
                       </Button>
-                      {product.isDigital && (
-                        <Badge className="absolute top-2 left-2 bg-primary">
+                      {product.isDigital &&
+                <Badge className="absolute top-2 left-2 bg-primary">
                           Digital Download
                         </Badge>
-                      )}
+                }
                     </CardHeader>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-2">
@@ -511,9 +543,9 @@ const Shop = () => {
                       <p className="text-2xl font-bold text-primary">
                         KSh {product.price}
                       </p>
-                      {product.isDigital && (
-                        <p className="text-xs text-muted-foreground mt-1">Instant download after purchase</p>
-                      )}
+                      {product.isDigital &&
+                <p className="text-xs text-muted-foreground mt-1">Instant download after purchase</p>
+                }
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
                       <Button className="w-full" onClick={() => addToCart(product)} disabled={!product.isDigital && product.stock === 0}>
@@ -525,6 +557,36 @@ const Shop = () => {
           </div>
         </section>
       </main>
+
+      {/* Floating Checkout Bar - Mobile */}
+      {cart.length > 0 &&
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-4 z-50 md:hidden">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-semibold">{getTotalItems()} item{getTotalItems() !== 1 ? 's' : ''}</span>
+              <span className="text-primary font-bold ml-2">KSh {getTotalPrice().toFixed(2)}</span>
+            </div>
+            <Button onClick={handleProceedToCheckout} className="gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Checkout
+            </Button>
+          </div>
+        </div>
+    }
+
+      {/* Floating Checkout Button - Desktop */}
+      {cart.length > 0 &&
+    <div className="hidden md:block fixed bottom-6 right-6 z-50">
+          <Button
+        size="lg"
+        className="shadow-lg gap-2"
+        onClick={handleProceedToCheckout}>
+
+            <ShoppingCart className="h-4 w-4" />
+            Checkout ({getTotalItems()}) - KSh {getTotalPrice().toFixed(2)}
+          </Button>
+        </div>
+    }
 
       <Footer />
     </div>;
