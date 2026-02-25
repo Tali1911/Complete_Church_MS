@@ -126,12 +126,11 @@ CREATE TRIGGER update_faq_content_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
--- Insert default social media handles
 INSERT INTO public.social_media_handles (platform, handle, url, icon, display_order) VALUES
-  ('Facebook', '@tentoftestimony', 'https://facebook.com/tentoftestimony', 'Facebook', 1),
-  ('Instagram', '@tentoftestimony', 'https://instagram.com/tentoftestimony', 'Instagram', 2),
+  ('Facebook', '@totministries', 'https://www.facebook.com/share/18B3NZdmb2/', 'Facebook', 1),
+  ('Instagram', '@totministries', 'https://www.instagram.com/totministries?igsh=aWM3MW5xMGZpcXhx', 'Instagram', 2),
   ('Twitter', '@tentoftestimony', 'https://twitter.com/tentoftestimony', 'Twitter', 3),
-  ('YouTube', 'TOT International', 'https://youtube.com/@totinternational', 'Youtube', 4);
+  ('YouTube', 'TOT Ministries', 'https://youtube.com/@totministries', 'Youtube', 4);
 
 -- Insert default FAQ content
 INSERT INTO public.faq_content (category, question, answer, display_order) VALUES

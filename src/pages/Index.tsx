@@ -73,9 +73,9 @@ const Index = memo(() => {
       "addressCountry": "KE"
     },
     "sameAs": [
-      "https://facebook.com/totint",
-      "https://twitter.com/totint",
-      "https://instagram.com/totint"
+      "https://www.facebook.com/share/18B3NZdmb2/",
+      "https://www.instagram.com/totministries?igsh=aWM3MW5xMGZpcXhx",
+      "https://youtube.com/@totministries"
     ]
   };
 
