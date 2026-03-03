@@ -47,9 +47,9 @@ export const useSocialMedia = () => {
       console.error('Error fetching social media links:', error);
       // Fallback to default links if fetch fails
       setSocialLinks([
-        { platform: "Facebook", url: "https://www.facebook.com/share/18B3NZdmb2/", handle: "@totministries", icon: Facebook },
-        { platform: "Instagram", url: "https://www.instagram.com/totministries?igsh=aWM3MW5xMGZpcXhx", handle: "@totministries", icon: Instagram },
-        { platform: "YouTube", url: "https://youtube.com/@totministries", handle: "TOT Ministries", icon: Youtube },
+        { platform: "Facebook", url: "https://facebook.com/totinternational", handle: "@totinternational", icon: Facebook },
+        { platform: "Instagram", url: "https://instagram.com/totinternational", handle: "@totinternational", icon: Instagram },
+        { platform: "YouTube", url: "https://youtube.com/totinternational", handle: "TOT International", icon: Youtube },
       ]);
     } finally {
       setLoading(false);

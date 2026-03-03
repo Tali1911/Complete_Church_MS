@@ -17,43 +17,43 @@ const Give = () => {
     setShowGivingForm(true);
   };
   const contributionTypes = [{
-    type: "Tithe",
+    type: "tithe",
     title: "Tithe",
     description: "Honor God with your first fruits and faithful stewardship",
     icon: Heart,
     color: "text-red-600"
   }, {
-    type: "Offering",
+    type: "offering",
     title: "Offering",
     description: "Support ongoing ministry operations and programs",
     icon: Gift,
     color: "text-blue-600"
   }, {
-    type: "Seed",
+    type: "seed",
     title: "Seed",
     description: "Sow a seed of faith for your future harvest",
     icon: Sprout,
     color: "text-green-600"
   }, {
-    type: "Mission",
+    type: "mission",
     title: "Missions",
     description: "Partner in church planting across East Africa & beyond",
     icon: Globe,
     color: "text-purple-600"
   }, {
-    type: "Gift",
+    type: "gift",
     title: "Special Gift",
     description: "One-time special gift to bless the ministry",
     icon: Package,
     color: "text-orange-600"
   }, {
-    type: "Thanksgiving",
+    type: "thanksgiving",
     title: "Thanksgiving",
     description: "Express gratitude to God through generous giving",
     icon: HandHeart,
     color: "text-pink-600"
   }, {
-    type: "Others",
+    type: "others",
     title: "Custom Contribution",
     description: "Building fund, youth ministry, or specify your own",
     icon: Edit,
@@ -116,14 +116,35 @@ const Give = () => {
   const { data: cmsFaqs } = useQuery({
     queryKey: ['giving-faqs'],
     queryFn: async () => {
+      // Fetch FAQ entries from page_content table (managed by GivePageManager)
       const { data, error } = await supabase
-        .from('faq_content')
-        .select('question, answer')
-        .eq('category', 'Giving & Finances')
+        .from('page_content')
+        .select('section_name, content, is_published')
+        .eq('page_name', 'give')
+        .like('section_name', 'faq_%')
         .eq('is_published', true)
-        .order('display_order', { ascending: true });
+        .order('section_name', { ascending: true });
       if (error) throw error;
-      return data;
+      
+      // Group by FAQ number: faq_1_question + faq_1_answer => { question, answer }
+      const faqMap: Record<string, { question?: string; answer?: string }> = {};
+      data?.forEach((item) => {
+        const match = item.section_name.match(/^faq_(\d+)_(question|answer)$/);
+        if (match) {
+          const num = match[1];
+          const type = match[2] as 'question' | 'answer';
+          if (!faqMap[num]) faqMap[num] = {};
+          faqMap[num][type] = item.content;
+        }
+      });
+      
+      // Convert to array, filter out incomplete entries
+      return Object.keys(faqMap)
+        .sort((a, b) => parseInt(a) - parseInt(b))
+        .map(num => faqMap[num])
+        .filter((faq): faq is { question: string; answer: string } => 
+          !!faq.question && !!faq.answer
+        );
     },
   });
 
@@ -417,7 +438,7 @@ const Give = () => {
         </section>
 
         {/* FAQ Section */}
-        {/* <section className="py-20 bg-background">
+        <section className="py-20 bg-background">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
@@ -439,7 +460,7 @@ const Give = () => {
                 </AccordionItem>)}
             </Accordion>
           </div>
-        </section> */}
+        </section>
 
         {/* Footer CTA Section */}
         <section className="py-20 bg-muted/30">
