@@ -29,12 +29,17 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const contributionTypes = [
-  { value: "offering", label: "Offering" },
   { value: "tithe", label: "Tithe" },
+  { value: "offering", label: "Offering" },
+  { value: "gift_1", label: "Gift 1" },
+  { value: "gift_2", label: "Gift 2" },
+  { value: "seed", label: "Seed" },
+  { value: "mission", label: "Mission" },
+  { value: "thanksgiving", label: "Thanksgiving" },
   { value: "building_fund", label: "Building Fund" },
-  { value: "missions", label: "Missions" },
   { value: "community_outreach", label: "Community Outreach" },
   { value: "special_offering", label: "Special Offering" },
+  { value: "others", label: "Others" },
 ];
 
 const getTypeBadgeColor = (type: string) => {
@@ -185,6 +190,7 @@ export const FinancialContributions = () => {
 
       toast.success("Cash contribution recorded successfully");
       setNewContribution({ type: "offering", amount: "", service: "", date: new Date().toISOString().split('T')[0], mpesaCode: "", bankedBy: "" });
+      await loadContributions();
       // Auto-switch to History tab so the user can see the saved record
       setActiveTab("history");
     } catch (error: any) {
@@ -199,6 +205,7 @@ export const FinancialContributions = () => {
       const { error } = await supabase.from('contributions').delete().eq('id', id);
       if (error) throw error;
       toast.success("Contribution deleted");
+      await loadContributions();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete");
     }
