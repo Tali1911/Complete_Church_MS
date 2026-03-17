@@ -54,6 +54,7 @@
  * - Color-coded role badges for visual identification
  */
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -131,6 +132,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string>("user");
   const [activeTab, setActiveTab] = useState("overview");
+  const [tabConfigs, setTabConfigs] = useState<Record<string, boolean> | null>(null);
   useInactivityLogout();
 
   useEffect(() => {
@@ -177,6 +179,31 @@ const Dashboard = () => {
     }
   }, [isAuthenticated, refreshRole]);
 
+  // Fetch tab configs for current user's role
+  useEffect(() => {
+    const fetchTabConfigs = async () => {
+      if (!userRole || userRole === 'user') return;
+      try {
+        const { data, error } = await supabase
+          .from('department_tab_configs')
+          .select('tab_id, enabled')
+          .eq('department', userRole);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const map: Record<string, boolean> = {};
+          data.forEach(row => { map[row.tab_id] = row.enabled; });
+          setTabConfigs(map);
+        } else {
+          setTabConfigs(null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch tab configs:', err);
+        setTabConfigs(null);
+      }
+    };
+    fetchTabConfigs();
+  }, [userRole]);
+
   // Show loading state
   if (loading) {
     return (
@@ -218,6 +245,7 @@ const Dashboard = () => {
         { value: "programs", label: "Programs", icon: BookOpen },
         { value: "analytics", label: "Advanced Analytics", icon: Activity },
         { value: "demographics", label: "Demographics", icon: Users },
+        { value: "giving-analysis", label: "Giving Analysis", icon: DollarSign },
         { value: "budget-requests", label: "Budget Requests", icon: DollarSign },
         { value: "inventory", label: "All Inventory", icon: Settings },
         { value: "activity-visibility", label: "Activity Visibility", icon: Shield },
@@ -280,6 +308,7 @@ const Dashboard = () => {
       ],
       it: [
         { value: "programs", label: "Programs", icon: BookOpen },
+        { value: "giving-analysis", label: "Giving Analysis", icon: DollarSign },
         { value: "user-management", label: "User Management", icon: Users },
         { value: "system-logs", label: "System Logs", icon: Activity },
         { value: "ticketing", label: "Support Tickets", icon: Ticket },
@@ -299,7 +328,14 @@ const Dashboard = () => {
       ]
     };
 
-    return [...baseTabs, ...(roleTabs[userRole as keyof typeof roleTabs] || roleTabs.user)];
+    let roleSpecificTabs = roleTabs[userRole as keyof typeof roleTabs] || roleTabs.user;
+    
+    // Filter tabs based on DB config if available
+    if (tabConfigs) {
+      roleSpecificTabs = roleSpecificTabs.filter(tab => tabConfigs[tab.value] !== false);
+    }
+
+    return [...baseTabs, ...roleSpecificTabs];
   };
 
   const getUserRoleBadge = () => {

@@ -79,6 +79,26 @@ export const FinancialContributions = () => {
   const [reportDateFrom, setReportDateFrom] = useState("");
   const [reportDateTo, setReportDateTo] = useState("");
 
+  // Day report
+  const [dayReportDate, setDayReportDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Preset report selectors
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const currentQuarter = Math.ceil(currentMonth / 3);
+  const currentHalf = currentMonth <= 6 ? 'H1' : 'H2';
+  const yearOptions = Array.from({ length: currentYear - 2019 }, (_, i) => (currentYear - i).toString());
+
+  const [presetDaily, setPresetDaily] = useState(new Date().toISOString().split('T')[0]);
+  const [presetWeeklyStart, setPresetWeeklyStart] = useState(new Date().toISOString().split('T')[0]);
+  const [presetMonth, setPresetMonth] = useState(currentMonth.toString());
+  const [presetMonthYear, setPresetMonthYear] = useState(currentYear.toString());
+  const [presetQuarter, setPresetQuarter] = useState(`Q${currentQuarter}`);
+  const [presetQuarterYear, setPresetQuarterYear] = useState(currentYear.toString());
+  const [presetHalf, setPresetHalf] = useState(currentHalf);
+  const [presetHalfYear, setPresetHalfYear] = useState(currentYear.toString());
+  const [presetAnnualYear, setPresetAnnualYear] = useState(currentYear.toString());
+
   useEffect(() => {
     loadContributions();
 
@@ -302,44 +322,76 @@ export const FinancialContributions = () => {
   };
 
   const generatePresetReport = (period: string) => {
-    const now = new Date();
     let filtered = completed;
-    let label = period.charAt(0).toUpperCase() + period.slice(1);
+    let label = '';
 
     switch (period) {
       case 'daily':
-        filtered = completed.filter(c => c.contribution_date?.startsWith(now.toISOString().split('T')[0]));
+        filtered = completed.filter(c => c.contribution_date === presetDaily);
+        label = `Daily Report – ${format(new Date(presetDaily + 'T00:00:00'), 'dd MMM yyyy')}`;
         break;
       case 'weekly': {
-        const weekAgo = new Date(now.getTime() - 7 * 86400000);
-        filtered = completed.filter(c => new Date(c.contribution_date) >= weekAgo);
-        break;
-      }
-      case 'monthly':
+        const start = new Date(presetWeeklyStart + 'T00:00:00');
+        const end = new Date(start.getTime() + 7 * 86400000);
         filtered = completed.filter(c => {
           const d = new Date(c.contribution_date);
-          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          return d >= start && d < end;
         });
+        label = `Weekly Report – ${format(start, 'dd MMM')} to ${format(end, 'dd MMM yyyy')}`;
         break;
+      }
+      case 'monthly': {
+        const m = parseInt(presetMonth) - 1;
+        const y = parseInt(presetMonthYear);
+        filtered = completed.filter(c => {
+          const d = new Date(c.contribution_date);
+          return d.getMonth() === m && d.getFullYear() === y;
+        });
+        label = `Monthly Report – ${format(new Date(y, m, 1), 'MMMM yyyy')}`;
+        break;
+      }
       case 'quarterly': {
-        const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-        filtered = completed.filter(c => new Date(c.contribution_date) >= qStart);
+        const qNum = parseInt(presetQuarter.replace('Q', ''));
+        const y = parseInt(presetQuarterYear);
+        const qStart = new Date(y, (qNum - 1) * 3, 1);
+        const qEnd = new Date(y, qNum * 3, 1);
+        filtered = completed.filter(c => {
+          const d = new Date(c.contribution_date);
+          return d >= qStart && d < qEnd;
+        });
+        label = `Quarterly Report – Q${qNum} ${y}`;
         break;
       }
       case 'semi-annual': {
-        const saStart = new Date(now.getFullYear(), now.getMonth() >= 6 ? 6 : 0, 1);
-        filtered = completed.filter(c => new Date(c.contribution_date) >= saStart);
-        label = 'Semi-Annual';
+        const y = parseInt(presetHalfYear);
+        const saStart = new Date(y, presetHalf === 'H1' ? 0 : 6, 1);
+        const saEnd = new Date(y, presetHalf === 'H1' ? 6 : 12, 1);
+        filtered = completed.filter(c => {
+          const d = new Date(c.contribution_date);
+          return d >= saStart && d < saEnd;
+        });
+        label = `Semi-Annual Report – ${presetHalf} ${y}`;
         break;
       }
       case 'annual': {
-        const yearStart = new Date(now.getFullYear(), 0, 1);
-        filtered = completed.filter(c => new Date(c.contribution_date) >= yearStart);
+        const y = parseInt(presetAnnualYear);
+        const yearStart = new Date(y, 0, 1);
+        const yearEnd = new Date(y + 1, 0, 1);
+        filtered = completed.filter(c => {
+          const d = new Date(c.contribution_date);
+          return d >= yearStart && d < yearEnd;
+        });
+        label = `Annual Report – ${y}`;
         break;
       }
     }
 
-    generateStyledPDF(filtered, `${label} Report`);
+    if (filtered.length === 0) {
+      toast.error("No records found for the selected period");
+      return;
+    }
+
+    generateStyledPDF(filtered, label);
   };
 
   const generateCustomReport = () => {
@@ -353,6 +405,110 @@ export const FinancialContributions = () => {
       ? `${reportDateFrom || 'Start'} to ${reportDateTo || 'Present'}`
       : 'All Dates';
     generateStyledPDF(filtered, `Custom Report • ${typeLabel} • ${dateLabel}`);
+  };
+
+  // Day Report helpers
+  const getDayReportRecords = () => completed.filter(c => c.contribution_date === dayReportDate);
+  const dayReportRecords = getDayReportRecords();
+  const dayReportTotal = dayReportRecords.reduce((s, c) => s + c.amount, 0);
+
+  const generateDayReportPDF = () => {
+    const records = dayReportRecords;
+    if (records.length === 0) {
+      toast.error("No contributions found for this date");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const selectedDate = new Date(dayReportDate + 'T00:00:00');
+    const dateFormatted = format(selectedDate, 'EEEE, d MMMM yyyy');
+    const totalAmount = records.reduce((s, c) => s + c.amount, 0);
+
+    const drawPageDecoration = (pageNum: number, totalPages: number) => {
+      doc.setFillColor(30, 41, 59);
+      doc.rect(0, 0, 210, 8, 'F');
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 8, 210, 2, 'F');
+
+      doc.saveGraphicsState();
+      const gState = (doc as any).GState({ opacity: 0.06 });
+      doc.setGState(gState);
+      doc.setFontSize(40);
+      doc.setTextColor(30, 41, 59);
+      doc.text('TENT OF TESTIMONIES', 105, 150, { align: 'center', angle: 45 });
+      doc.text('MINISTRIES INT', 105, 175, { align: 'center', angle: 45 });
+      doc.restoreGraphicsState();
+
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text('Tent of Testimonies Ministries Int • Confidential Daily Report', 105, 285, { align: 'center' });
+      doc.text(`Page ${pageNum} of ${totalPages}`, 195, 285, { align: 'right' });
+    };
+
+    drawPageDecoration(1, 1);
+
+    // Header with logo
+    try {
+      doc.addImage(logoImg, 'PNG', 15, 12, 18, 18);
+    } catch (e) {}
+    doc.setFontSize(20);
+    doc.setTextColor(30, 41, 59);
+    doc.text('DAILY CONTRIBUTIONS REPORT', 36, 25);
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text(dateFormatted, 36, 33);
+
+    // Summary boxes
+    doc.setFillColor(220, 252, 231);
+    doc.roundedRect(15, 42, 85, 30, 3, 3, 'F');
+    doc.setFillColor(219, 234, 254);
+    doc.roundedRect(110, 42, 85, 30, 3, 3, 'F');
+
+    doc.setFontSize(9);
+    doc.setTextColor(22, 101, 52);
+    doc.text('GRAND TOTAL (KES)', 20, 52);
+    doc.setFontSize(18);
+    doc.text(formatAmount(totalAmount), 20, 65);
+
+    doc.setFontSize(9);
+    doc.setTextColor(30, 64, 175);
+    doc.text('TOTAL TRANSACTIONS', 115, 52);
+    doc.setFontSize(18);
+    doc.text(String(records.length), 115, 65);
+
+    // Transactions table
+    let y = 82;
+    doc.setFontSize(14);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Transaction Details', 20, y);
+    y += 5;
+
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Type', 'Service/Notes', 'M-Pesa Code', 'Banked By', 'Amount (KES)']],
+      body: [
+        ...records.map((c, i) => [
+          String(i + 1),
+          getContributionTypeLabel(c.contribution_type),
+          c.notes || '-',
+          c.transaction_reference || '-',
+          c.banked_by || '-',
+          formatAmount(c.amount),
+        ]),
+        // Grand total row
+        ['', '', '', '', { content: 'GRAND TOTAL', styles: { fontStyle: 'bold', halign: 'right' as const } }, { content: formatAmount(totalAmount), styles: { fontStyle: 'bold' } }],
+      ],
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      styles: { fontSize: 8, cellPadding: 3 },
+      didDrawPage: (data: any) => {
+        const pageCount = doc.getNumberOfPages();
+        drawPageDecoration(data.pageNumber, pageCount);
+      },
+    });
+
+    doc.save(`daily-contributions-report-${dayReportDate}.pdf`);
+    toast.success("Day report downloaded successfully");
   };
 
   if (isLoading) {
@@ -653,6 +809,37 @@ export const FinancialContributions = () => {
 
         <TabsContent value="reports">
           <div className="space-y-6">
+            {/* Day Report */}
+            <Card className="border-2 border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Day Report
+                </CardTitle>
+                <CardDescription>Generate a comprehensive PDF report for a specific day</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div className="space-y-2">
+                    <Label>Select Date</Label>
+                    <Input type="date" value={dayReportDate} onChange={e => setDayReportDate(e.target.value)} />
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground">Records Found</p>
+                    <p className="text-lg font-bold">{dayReportRecords.length}</p>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground">Grand Total (KES)</p>
+                    <p className="text-lg font-bold">{formatAmount(dayReportTotal)}</p>
+                  </div>
+                </div>
+                <Button onClick={generateDayReportPDF} disabled={dayReportRecords.length === 0} className="w-full">
+                  <Download className="mr-2 h-4 w-4" />
+                  Generate Day Report
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Custom filtered report */}
             <Card>
               <CardHeader>
@@ -698,23 +885,170 @@ export const FinancialContributions = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Preset Reports</CardTitle>
-                <CardDescription>Quick-generate standard period reports</CardDescription>
+                <CardDescription>Select a date or period, then generate a report</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
-                    { period: 'daily', label: 'Daily Report', icon: Calendar },
-                    { period: 'weekly', label: 'Weekly Report', icon: TrendingUp },
-                    { period: 'monthly', label: 'Monthly Report', icon: DollarSign },
-                    { period: 'quarterly', label: 'Quarterly Report', icon: Calendar },
-                    { period: 'semi-annual', label: 'Semi-Annual Report', icon: TrendingUp },
-                    { period: 'annual', label: 'Annual Report', icon: DollarSign },
-                  ].map(({ period, label, icon: Icon }) => (
-                    <Button key={period} variant="outline" className="h-20 flex-col" onClick={() => generatePresetReport(period)}>
-                      <Icon className="h-5 w-5 mb-1" />
-                      {label}
-                    </Button>
-                  ))}
+                  {/* Daily */}
+                  <Card className="border">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        Daily Report
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Date</Label>
+                        <Input type="date" value={presetDaily} onChange={e => setPresetDaily(e.target.value)} className="h-8 text-xs" />
+                      </div>
+                      <Button size="sm" className="w-full" onClick={() => generatePresetReport('daily')}>
+                        <Download className="mr-2 h-3 w-3" /> Generate
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Weekly */}
+                  <Card className="border">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Weekly Report
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Start Date</Label>
+                        <Input type="date" value={presetWeeklyStart} onChange={e => setPresetWeeklyStart(e.target.value)} className="h-8 text-xs" />
+                      </div>
+                      <Button size="sm" className="w-full" onClick={() => generatePresetReport('weekly')}>
+                        <Download className="mr-2 h-3 w-3" /> Generate
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Monthly */}
+                  <Card className="border">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        Monthly Report
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Month</Label>
+                          <Select value={presetMonth} onValueChange={setPresetMonth}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                                <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Year</Label>
+                          <Select value={presetMonthYear} onValueChange={setPresetMonthYear}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button size="sm" className="w-full" onClick={() => generatePresetReport('monthly')}>
+                        <Download className="mr-2 h-3 w-3" /> Generate
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quarterly */}
+                  <Card className="border">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        Quarterly Report
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Quarter</Label>
+                          <Select value={presetQuarter} onValueChange={setPresetQuarter}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Q1">Q1 (Jan–Mar)</SelectItem>
+                              <SelectItem value="Q2">Q2 (Apr–Jun)</SelectItem>
+                              <SelectItem value="Q3">Q3 (Jul–Sep)</SelectItem>
+                              <SelectItem value="Q4">Q4 (Oct–Dec)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Year</Label>
+                          <Select value={presetQuarterYear} onValueChange={setPresetQuarterYear}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button size="sm" className="w-full" onClick={() => generatePresetReport('quarterly')}>
+                        <Download className="mr-2 h-3 w-3" /> Generate
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Semi-Annual */}
+                  <Card className="border">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Semi-Annual Report
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Half</Label>
+                          <Select value={presetHalf} onValueChange={setPresetHalf}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="H1">H1 (Jan–Jun)</SelectItem>
+                              <SelectItem value="H2">H2 (Jul–Dec)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Year</Label>
+                          <Select value={presetHalfYear} onValueChange={setPresetHalfYear}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button size="sm" className="w-full" onClick={() => generatePresetReport('semi-annual')}>
+                        <Download className="mr-2 h-3 w-3" /> Generate
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Annual */}
+                  <Card className="border">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        Annual Report
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Year</Label>
+                        <Select value={presetAnnualYear} onValueChange={setPresetAnnualYear}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button size="sm" className="w-full" onClick={() => generatePresetReport('annual')}>
+                        <Download className="mr-2 h-3 w-3" /> Generate
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
