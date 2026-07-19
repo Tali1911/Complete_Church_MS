@@ -1,0 +1,4 @@
+Repository transfer note.
+Source repo: https://github.com/gloryriungu/gathering-place-digital-heart.git
+Destination repo: https://github.com/Tali1911/Complete_Church_MS.git
+Author: Tali1911
