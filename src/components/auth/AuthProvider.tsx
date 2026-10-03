@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getSignInErrorMessage } from '@/lib/authErrors';
 
 // Storage key for password recovery mode - set by index.html before any JS loads
 const RECOVERY_STORAGE_KEY = 'password_recovery_mode';
@@ -23,6 +24,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
+  refreshProfileCompletion: () => Promise<void>;
   switchActiveRole: (role: string) => void;
   isAuthenticated: boolean;
   needsProfileCompletion: boolean;
@@ -43,6 +45,17 @@ const pickPrimaryRole = (roles: string[]): string => {
     if (roles.includes(r)) return r;
   }
   return 'user';
+};
+
+export const isGoogleOnlyAccount = (authUser: User): boolean => {
+  const provider = authUser.app_metadata?.provider;
+  const providers = Array.isArray(authUser.app_metadata?.providers)
+    ? authUser.app_metadata.providers
+    : [];
+  const hasEmailIdentity = providers.includes('email') ||
+    (authUser.identities ?? []).some((identity) => identity.provider === 'email');
+
+  return provider === 'google' && !hasEmailIdentity;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -124,11 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Only OAuth (e.g. Google) users need the extra profile-completion step.
       // Email/password sign-ups already provide phone/address/county in the Join Us form.
-      const provider = authUser.app_metadata?.provider;
-      const identities = authUser.identities ?? [];
-      const isOAuthUser =
-        (provider && provider !== 'email') ||
-        identities.some((i: any) => i.provider && i.provider !== 'email');
+      const isOAuthUser = isGoogleOnlyAccount(authUser);
 
       if (!isOAuthUser) {
         setNeedsProfileCompletion(false);
@@ -319,9 +328,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        const friendly = getSignInErrorMessage(error);
         toast({
-          title: "Sign In Error",
-          description: error.message,
+          title: friendly.title,
+          description: friendly.description,
           variant: "destructive"
         });
       } else {
@@ -333,9 +343,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { error };
     } catch (error: any) {
+      const friendly = getSignInErrorMessage(error);
       toast({
-        title: "Sign In Error",
-        description: "An unexpected error occurred",
+        title: friendly.title,
+        description: friendly.description,
         variant: "destructive"
       });
       return { error };
@@ -345,6 +356,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshRole = async () => {
     if (user) {
       await fetchUserRole(user.id);
+    }
+  };
+
+  const refreshProfileCompletion = async () => {
+    if (user) {
+      await checkProfileCompletion(user);
     }
   };
 
@@ -435,6 +452,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithGoogle,
     signOut,
     refreshRole,
+    refreshProfileCompletion,
     switchActiveRole,
     isAuthenticated: !!user,
     needsProfileCompletion,

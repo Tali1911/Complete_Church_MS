@@ -19,7 +19,7 @@
 
 import { useEffect, useState, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, ArrowRight } from "lucide-react";
+import { Play, MapPin, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
@@ -48,6 +48,29 @@ export const Hero = memo(() => {
   const [heroContent, setHeroContent] = useState<HeroContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [revealed, setRevealed] = useState<boolean>(() => typeof window !== "undefined" && (Boolean((window as any).__heroRevealed) || window.scrollY > 30));
+
+  const reveal = useCallback(() => {
+    (window as any).__heroRevealed = true;
+    setRevealed(true);
+    window.dispatchEvent(new Event("hero-revealed"));
+  }, []);
+
+  useEffect(() => {
+    if (revealed) { reveal(); return; }
+    const onScroll = () => { if (window.scrollY > 10) reveal(); };
+    const opts = { passive: true } as AddEventListenerOptions;
+    window.addEventListener("scroll", onScroll, opts);
+    window.addEventListener("wheel", reveal, opts);
+    window.addEventListener("touchstart", reveal, opts);
+    window.addEventListener("keydown", reveal);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", reveal);
+      window.removeEventListener("touchstart", reveal);
+      window.removeEventListener("keydown", reveal);
+    };
+  }, [revealed, reveal]);
 
   const fetchHeroContent = useCallback(async () => {
     try {
@@ -132,7 +155,7 @@ export const Hero = memo(() => {
   const backgroundVideo = (content as any).background_video || (content as any).video_url || defaultContent.video_url;
   const backgroundImage = (content as any).background_image || (content as any).image_url || defaultContent.image_url;
 
-  return <section className="relative min-h-screen bg-primary text-primary-foreground overflow-hidden pt-20">
+  return <section onClick={reveal} className="relative min-h-screen bg-primary text-primary-foreground overflow-hidden">
       {/* Background Image (immediate) */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-300"
@@ -155,46 +178,56 @@ export const Hero = memo(() => {
         </video>
       )}
       
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/60 via-primary/40 to-primary/80"></div>
-      
-      {/* Content */}
-      <div className="relative flex items-center justify-center min-h-screen pb-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 text-center">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black mb-6 tracking-tight leading-tight">
-            {content.heading || defaultContent.heading}
-          </h1>
-          <p className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto font-light leading-relaxed">
-            {content.subheading || defaultContent.subheading}
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Button asChild size="lg" className="bg-white text-black font-bold px-8 py-4 text-lg shadow-lg hover:bg-white">
-              <Link to="/visit-us">
-                {content.cta1_text || defaultContent.cta1_text}
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" className="border-2 border-white text-white bg-white/10 backdrop-blur-sm font-bold px-8 py-4 text-lg whitespace-nowrap shadow-lg hover:bg-white/20">
-              <Link to="/watch">
-                <Play className="h-5 w-5 mr-2" />
-                {content.cta2_text || defaultContent.cta2_text}
-              </Link>
-            </Button>
-          </div>
-        </div>
+      <div className={`absolute inset-0 bg-gradient-to-r from-plum-deep/90 via-primary/70 to-primary/30 transition-opacity duration-700 ${revealed ? "opacity-100" : "opacity-0"}`}></div>
+
+      {/* Decorative line arcs */}
+      <div aria-hidden className={`pointer-events-none absolute -right-40 top-1/2 -translate-y-1/2 hidden md:block transition-opacity duration-700 ${revealed ? "opacity-100" : "opacity-0"}`}>
+        <div className="h-[640px] w-[640px] rounded-full border border-accent/25" />
+        <div className="absolute inset-16 rounded-full border border-accent/20" />
+        <div className="absolute inset-32 rounded-full border border-accent/15" />
       </div>
 
-      {/* Service Times Banner */}
-      <div className="absolute bottom-0 left-0 right-0 bg-background text-foreground py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-center md:text-left mb-4 md:mb-0">
-              <h3 className="text-2xl font-bold">NEXT SERVICE</h3>
-              <p className="text-lg">Sunday 9:00 AM & 11:00 AM</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm uppercase tracking-wide font-medium">JOIN US</p>
-              <p className="text-xl font-bold">EVERY SUNDAY</p>
+      {/* Tap / scroll cue */}
+      {!revealed && (
+        <button type="button" onClick={reveal} className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-primary-foreground/90 animate-pulse">
+          <span className="rounded-full border border-accent/60 bg-primary/30 backdrop-blur-sm px-5 py-2 text-xs font-semibold tracking-[0.2em]">TAP OR SCROLL TO ENTER</span>
+          <ChevronDown className="h-5 w-5 text-accent" />
+        </button>
+      )}
+
+      {/* Content */}
+      <div className={`relative flex items-center min-h-screen pt-20 py-8 md:py-12 transition-all duration-700 ${revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6 pointer-events-none"}`}>
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+          <div className="max-w-2xl">
+            <p className="eyebrow mb-4 flex items-center gap-3">
+              <span className="h-px w-10 bg-accent" /> Welcome Home
+            </p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+              {(() => {
+                const h = content.heading || defaultContent.heading;
+                const words = h.split(" ");
+                if (words.length < 3) return h;
+                const cut = Math.ceil(words.length / 2);
+                return <>{words.slice(0, cut).join(" ")}{" "}<span className="text-accent italic">{words.slice(cut).join(" ")}</span></>;
+              })()}
+            </h1>
+            <p className="text-base md:text-lg mb-6 max-w-xl text-primary-foreground/85 leading-relaxed">
+              {content.subheading || defaultContent.subheading}
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button asChild size="lg" className="px-8 text-base">
+                <Link to="/visit-us">
+                  <MapPin className="h-5 w-5 mr-2" />
+                  {(content as any).cta_primary || content.cta1_text || defaultContent.cta1_text}
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="px-8 text-base border-2 border-accent bg-transparent text-primary-foreground hover:bg-accent/15 hover:text-primary-foreground">
+                <Link to="/watch">
+                  <Play className="h-5 w-5 mr-2" />
+                  {(content as any).cta_secondary || content.cta2_text || defaultContent.cta2_text}
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

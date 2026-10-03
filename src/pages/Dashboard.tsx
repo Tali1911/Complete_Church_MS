@@ -80,7 +80,9 @@ import {
   Ticket,
   Mail,
   CreditCard,
-  Cookie
+  Cookie,
+  Globe
+
 } from "lucide-react";
 import { AttendanceTracker } from "@/components/dashboard/AttendanceTracker";
 import { FinancialContributions } from "@/components/dashboard/FinancialContributions";
@@ -114,6 +116,8 @@ import { AdvancedAnalytics } from "@/components/founder/AdvancedAnalytics";
 import { DemographicsAnalytics } from "@/components/founder/DemographicsAnalytics";
 import { BudgetProposals } from "@/components/budget/BudgetProposals";
 import { DepartmentTabManager } from "@/components/admin/DepartmentTabManager";
+import { SiteVisibilityManager } from "@/components/admin/SiteVisibilityManager";
+
 import { UserProfile } from "@/components/dashboard/UserProfile";
 import { ApplicationStatus } from "@/components/dashboard/ApplicationStatus";
 import { ActivityLogVisibilityManager } from "@/components/admin/ActivityLogVisibilityManager";
@@ -125,6 +129,8 @@ import { ProgramResourcesEditor } from "@/components/pastor/ProgramResourcesEdit
 import { ProgramQuestionsEditor } from "@/components/pastor/ProgramQuestionsEditor";
 import { CandidateProgressViewer } from "@/components/pastor/CandidateProgressViewer";
 import { MyDownloads } from "@/components/dashboard/MyDownloads";
+import { MyMilestones } from "@/components/dashboard/MyMilestones";
+import { CalendarHeart } from "lucide-react";
 import { CookieConsentManager } from "@/components/admin/CookieConsentManager";
 
 const Dashboard = () => {
@@ -235,6 +241,7 @@ const Dashboard = () => {
   const getRoleBasedTabs = () => {
     const baseTabs = [
       { value: "overview", label: "Overview", icon: Calendar },
+      { value: "milestones", label: "My Milestones", icon: CalendarHeart },
       { value: "give", label: "Give", icon: Heart },
       { value: "my-downloads", label: "My Downloads", icon: BookOpen },
       { value: "profile", label: "Profile", icon: Users },
@@ -327,6 +334,8 @@ const Dashboard = () => {
         { value: "security", label: "Security", icon: Shield },
         { value: "cookie-consent", label: "Cookie Consent", icon: Cookie },
         { value: "tab-management", label: "Tab Management", icon: Settings },
+        { value: "site-visibility", label: "Site Visibility", icon: Globe },
+
         { value: "requisitions", label: "Requisitions", icon: FileText },
         { value: "inventory", label: "All Inventory", icon: Settings },
       ],
@@ -519,8 +528,17 @@ const Dashboard = () => {
               <DepartmentTabManager />
             </TabsContent>
 
+            <TabsContent value="site-visibility">
+              <SiteVisibilityManager />
+            </TabsContent>
+
+
             <TabsContent value="profile">
               <UserProfile />
+            </TabsContent>
+
+            <TabsContent value="milestones">
+              <MyMilestones />
             </TabsContent>
 
             <TabsContent value="my-downloads">
