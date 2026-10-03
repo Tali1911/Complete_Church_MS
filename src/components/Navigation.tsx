@@ -19,7 +19,7 @@
  */
 
 import { useState, memo, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, ShoppingCart, Heart } from "lucide-react";
 import {
@@ -34,20 +34,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import logo from "@/assets/logo.png";
 import { PortalSwitcher } from "@/components/shared/PortalSwitcher";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+
 
 export const Navigation = memo(() => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [cartItems, setCartItems] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isGetInvolvedOpen, setIsGetInvolvedOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const { isVisible } = useFeatureFlags();
   const { socialLinks } = useSocialMedia();
+
 
   useEffect(() => {
     fetchWishlistCount();
-    
-    // Subscribe to wishlist changes
+
+    // Subscribe to wishlist changes (unique channel name avoids re-using a subscribed channel)
     const channel = supabase
-      .channel('wishlist-changes')
+      .channel(`wishlist-changes-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
@@ -64,7 +72,8 @@ export const Navigation = memo(() => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
+
 
   const fetchWishlistCount = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -85,30 +94,66 @@ export const Navigation = memo(() => {
   const closeMenu = useCallback(() => setIsOpen(false), []);
   const toggleGetInvolved = useCallback(() => setIsGetInvolvedOpen(!isGetInvolvedOpen), [isGetInvolvedOpen]);
 
-  const navItems = [
-    { name: "ABOUT", href: "/about" },
-    { name: "WATCH", href: "/watch" },
-    { name: "EVENTS", href: "/events" },
-    { name: "GIVE", href: "/give" },
-    { name: "SHOP", href: "/shop" },
+  const handleAuthClick = useCallback(async () => {
+    if (user) {
+      await signOut();
+      navigate("/");
+    } else {
+      navigate("/auth");
+    }
+    closeMenu();
+  }, [user, signOut, navigate, closeMenu]);
+
+  // Portal/dashboard pages already provide their own Sign Out control,
+  // so avoid rendering a duplicate auth button in the public nav there.
+  const isPortalRoute = /^\/(dashboard|admin|pastors|media-dashboard|marketing-dashboard|registration-dashboard|requisitions)/.test(
+    location.pathname
+  );
+  const showAuthButton = !(user && isPortalRoute);
+
+
+  const allNavItems = [
+    { key: "about", name: "ABOUT", href: "/about" },
+    { key: "watch", name: "WATCH", href: "/watch" },
+    { key: "events", name: "EVENTS", href: "/events" },
+    { key: "give", name: "GIVE", href: "/give" },
+    { key: "shop", name: "SHOP", href: "/shop" },
   ];
 
-  const getInvolvedItems = [
-    { name: "JOIN THE FAMILY", href: "/join-the-family" },
-    { name: "SERVE WITH US", href: "/serve-with-us" },
-    { name: "BAPTISM", href: "/baptism" },
-    { name: "MINISTRIES", href: "/ministries" },
-    { name: "COUNSELING & MENTAL HEALTH", href: "/counseling-mental-health" },
-    { name: "PARTNERS", href: "/partners" },
-    { name: "BABY DEDICATIONS", href: "/baby-dedication" },
-    { name: "PROPHETIC SCHOOL", href: "/prophetic-school" },
-    { name: "NEWSLETTER", href: "/newsletter" },
-    { name: "NOTICE OF FILMING", href: "/notice-of-filming" },
-    { name: "FAQ", href: "/faq" },
+  const allGetInvolvedItems = [
+    { key: "join_family", name: "JOIN THE FAMILY", href: "/join-the-family" },
+    { key: "serve_with_us", name: "SERVE WITH US", href: "/serve-with-us" },
+    { key: "baptism", name: "BAPTISM", href: "/baptism" },
+    { key: "ministries", name: "MINISTRIES", href: "/ministries" },
+    { key: "counseling", name: "COUNSELING & MENTAL HEALTH", href: "/counseling-mental-health" },
+    { key: "partners", name: "PARTNERS", href: "/partners" },
+    { key: "baby_dedication", name: "BABY DEDICATIONS", href: "/baby-dedication" },
+    { key: "prophetic_school", name: "PROPHETIC SCHOOL", href: "/prophetic-school" },
+    { key: "newsletter", name: "NEWSLETTER", href: "/newsletter" },
+    { key: "notice_of_filming", name: "NOTICE OF FILMING", href: "/notice-of-filming" },
+    { key: "faq", name: "FAQ", href: "/faq" },
   ];
+
+  const navItems = allNavItems.filter((item) => isVisible(item.key));
+  const getInvolvedItems = allGetInvolvedItems.filter((item) => isVisible(item.key));
+  const showGetInvolved = isVisible("get_involved") && getInvolvedItems.length > 0;
+  const showShop = isVisible("shop");
+  const showSignIn = Boolean(user) || isVisible("sign_in_button");
+
+
+  const isHome = location.pathname === "/";
+  const [heroRevealed, setHeroRevealed] = useState<boolean>(() => typeof window !== "undefined" && Boolean((window as any).__heroRevealed));
+  useEffect(() => {
+    if (!isHome) return;
+    setHeroRevealed(Boolean((window as any).__heroRevealed));
+    const onReveal = () => setHeroRevealed(true);
+    window.addEventListener("hero-revealed", onReveal);
+    return () => window.removeEventListener("hero-revealed", onReveal);
+  }, [isHome]);
+  const navHidden = isHome && !heroRevealed;
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
+    <nav className={`fixed top-0 w-full z-50 bg-primary/95 backdrop-blur-md border-b border-primary-foreground/10 transition-all duration-500 ${navHidden ? "-translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20 gap-4">
           {/* Logo */}
@@ -124,13 +169,14 @@ export const Navigation = memo(() => {
               <Link
                 key={item.name}
                 to={item.href}
-                className="text-white/90 hover:text-white font-semibold text-[13px] tracking-[0.08em] transition-colors"
+                className={`px-3 py-1.5 rounded-full font-semibold text-[13px] tracking-[0.08em] transition-all duration-300 ${location.pathname.startsWith(item.href) ? "bg-gradient-amber text-accent-foreground" : "text-primary-foreground/85 hover:text-accent"}`}
               >
                 {item.name}
               </Link>
             ))}
 
             {/* Get Involved Dropdown */}
+            {showGetInvolved && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="text-white/90 hover:text-white font-semibold text-[13px] tracking-[0.08em] transition-colors flex items-center gap-1">
@@ -151,6 +197,8 @@ export const Navigation = memo(() => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
+
           </div>
 
           {/* Right cluster: icons + CTAs */}
@@ -172,6 +220,7 @@ export const Navigation = memo(() => {
             </div>
 
             {/* Wishlist & Cart Icons */}
+            {showShop && (
             <div className="flex items-center gap-3">
               <Link to="/wishlist" className="relative text-white/80 hover:text-white transition-colors" aria-label="Wishlist">
                 <Heart className="h-[18px] w-[18px]" />
@@ -190,16 +239,20 @@ export const Navigation = memo(() => {
                 )}
               </Link>
             </div>
+            )}
 
             {/* Divider */}
             <span className="h-6 w-px bg-white/15" aria-hidden="true" />
 
             {/* CTAs */}
             <PortalSwitcher variant="outline" className="bg-transparent text-white hover:bg-white hover:text-black font-semibold border-white/30 h-9 px-3" />
-            <Button variant="ghost" className="text-white hover:bg-white/10 font-semibold h-9 px-3" asChild>
-              <Link to="/auth">SIGN IN</Link>
-            </Button>
-            <Button className="bg-white text-black hover:bg-gray-100 font-semibold h-9 px-4" asChild>
+            {showAuthButton && showSignIn && (
+              <Button variant="ghost" className="text-white hover:bg-white/10 font-semibold h-9 px-3" onClick={handleAuthClick}>
+                {user ? "SIGN OUT" : "SIGN IN"}
+              </Button>
+            )}
+
+            <Button className="font-semibold h-9 px-5" asChild>
               <Link to="/visit-us">VISIT US</Link>
             </Button>
           </div>
@@ -214,7 +267,7 @@ export const Navigation = memo(() => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="lg:hidden bg-black/95 backdrop-blur-md max-h-[calc(100vh-5rem)] overflow-y-auto">
+          <div className="lg:hidden bg-primary backdrop-blur-md max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="px-2 pt-2 pb-6 space-y-4">
               {navItems.map((item) => (
                 <Link
@@ -227,15 +280,17 @@ export const Navigation = memo(() => {
                 </Link>
               ))}
 
-              <Link
-                to="/auth"
-                className="block px-3 py-3 text-white hover:text-gray-300 font-bold text-lg tracking-wide"
-                onClick={closeMenu}
-              >
-                SIGN IN
-              </Link>
+              {showAuthButton && showSignIn && (
+                <button
+                  className="block w-full text-left px-3 py-3 text-white hover:text-gray-300 font-bold text-lg tracking-wide"
+                  onClick={handleAuthClick}
+                >
+                  {user ? "SIGN OUT" : "SIGN IN"}
+                </button>
+              )}
 
               {/* Mobile Get Involved Collapsible Section */}
+              {showGetInvolved && (
               <Collapsible open={isGetInvolvedOpen} onOpenChange={toggleGetInvolved}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-3 text-white hover:text-gray-300 font-bold text-lg tracking-wide">
                   GET INVOLVED
@@ -254,6 +309,8 @@ export const Navigation = memo(() => {
                   ))}
                 </CollapsibleContent>
               </Collapsible>
+              )}
+
 
               {/* Mobile Social Links */}
               <div className="px-3 py-3">
@@ -275,6 +332,7 @@ export const Navigation = memo(() => {
               </div>
 
               {/* Mobile Cart */}
+              {showShop && (
               <div className="px-3 py-3">
                 <Link
                   to="/shop"
@@ -290,12 +348,14 @@ export const Navigation = memo(() => {
                   )}
                 </Link>
               </div>
+              )}
+
 
               <div className="pt-4 px-3 space-y-3">
                 <div className="flex justify-center">
                   <PortalSwitcher variant="outline" className="w-full bg-white text-black hover:bg-gray-100 font-semibold border-white" />
                 </div>
-                <Button className="w-full bg-white text-black hover:bg-gray-100 font-bold" asChild>
+                <Button className="w-full font-bold" asChild>
                   <Link to="/visit-us" onClick={closeMenu}>
                     VISIT US
                   </Link>

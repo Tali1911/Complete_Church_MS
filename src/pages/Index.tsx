@@ -34,8 +34,8 @@ import { ServiceTimes } from "@/components/ServiceTimes";
 import { LatestSermon } from "@/components/LatestSermon";
 import { Announcements } from "@/components/Announcements";
 import { Navigation } from "@/components/Navigation";
+import { LiveMarquee } from "@/components/LiveMarquee";
 import { Footer } from "@/components/Footer";
-import { AIAssistant } from "@/components/AIAssistant";
 import { SEO } from "@/components/SEO";
 import { Suspense, lazy, memo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -90,6 +90,7 @@ const Index = memo(() => {
       />
       <Navigation />
       <Hero />
+      <LiveMarquee />
       <ServiceTimes />
       <LatestSermon />
       <Announcements />
@@ -111,13 +112,6 @@ const Index = memo(() => {
       </Suspense>
       
       <Footer />
-      
-      {/* AI Assistant - Temporarily disabled
-      <AIAssistant 
-        welcomeMessage="Welcome to TOT Int! I can help you with questions, generate assessments, and create content. What would you like to know?"
-        apiEndpoint="https://web-production-61663.up.railway.app/process/"
-      />
-      */}
     </div>
   );
 });
