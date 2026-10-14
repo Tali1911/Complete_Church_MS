@@ -2,7 +2,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, Gift, Users, Globe, Sprout, Package, Edit, Smartphone, CreditCard, Shield, Lock, CheckCircle, TrendingUp, DollarSign, HandHeart, ChevronDown } from "lucide-react";
+import { Heart, Gift, Users, Globe, Sprout, Package, Edit, Smartphone, CreditCard, Shield, Lock, CheckCircle, DollarSign, HandHeart, ChevronDown } from "lucide-react";
 import { GivingForm } from "@/components/giving/GivingForm";
 import { useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -58,27 +58,6 @@ const Give = () => {
     description: "Building fund, youth ministry, or specify your own",
     icon: Edit,
     color: "text-amber"
-  }];
-  const impactAllocations = [{
-    percentage: "35%",
-    title: "MISSIONS",
-    description: "Global missions & church planting",
-    icon: Globe
-  }, {
-    percentage: "30%",
-    title: "MINISTRY",
-    description: "Life-changing programs & events",
-    icon: Users
-  }, {
-    percentage: "20%",
-    title: "COMMUNITY",
-    description: "Outreach & feeding initiatives",
-    icon: Heart
-  }, {
-    percentage: "15%",
-    title: "OPERATIONS",
-    description: "Facilities & staff support",
-    icon: TrendingUp
   }];
   const testimonials = [{
     quote: "Giving has transformed my life. I've experienced God's faithfulness in ways I never imagined.",
@@ -164,31 +143,19 @@ const Give = () => {
               <p className="text-xl md:text-2xl text-primary-foreground/80 max-w-4xl mx-auto mb-8">
                 Partner with us in advancing God's kingdom. Your faithful giving transforms lives across East Africa and beyond.
               </p>
-              
-              {/* Stats */}
-              <div className="flex flex-wrap justify-center gap-8 mb-10">
-                <div className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold">500+</div>
-                  <div className="text-sm text-primary-foreground/70">Active Partners</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold">35%</div>
-                  <div className="text-sm text-primary-foreground/70">Goes to Missions</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold">100%</div>
-                  <div className="text-sm text-primary-foreground/70">Goes to Ministry</div>
-                </div>
-              </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <Button onClick={() => handleGiveClick()} size="lg" className="font-bold text-lg px-8 py-6">
                   Give Now
                 </Button>
-                <Button variant="outline" size="lg" className="border-amber bg-transparent text-cream hover:bg-amber hover:text-primary font-bold text-lg px-8 py-6" onClick={() => document.getElementById('impact')?.scrollIntoView({
-                behavior: 'smooth'
-              })}>
-                  See Your Impact
+                <Button variant="outline" size="lg" className="border-amber bg-transparent text-cream hover:bg-amber hover:text-primary font-bold text-lg px-8 py-6" onClick={() => {
+                const el = document.getElementById('why-we-give');
+                if (el) window.scrollTo({
+                  top: el.getBoundingClientRect().top + window.scrollY - 96,
+                  behavior: 'smooth'
+                });
+              }}>
+                  Why Give
                 </Button>
               </div>
 
@@ -207,44 +174,6 @@ const Give = () => {
                   <span>100% Secure</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Impact Allocation Section */}
-        <section id="impact" className="py-20 bg-muted/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
-                Where Your Giving Goes
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                Every contribution is strategically allocated to maximize kingdom impact
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {impactAllocations.map((allocation, index) => {
-              const IconComponent = allocation.icon;
-              return <Card key={index} className="p-8 text-center hover:shadow-lg transition-all">
-                    <div className="mb-4">
-                      <IconComponent className="h-12 w-12 mx-auto text-primary" />
-                    </div>
-                    <div className="text-5xl font-black text-primary mb-2">
-                      {allocation.percentage}
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">
-                      {allocation.title}
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      {allocation.description}
-                    </p>
-                  </Card>;
-            })}
-            </div>
-
-            <div className="text-center mt-8">
-              
             </div>
           </div>
         </section>
@@ -296,7 +225,7 @@ const Give = () => {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-20 bg-muted/30">
+        <section id="how-it-works" className="py-20 bg-muted/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
@@ -376,7 +305,7 @@ const Give = () => {
         </section>
 
         {/* Why We Give */}
-        <section className="py-20 bg-background">
+        <section id="why-we-give" className="py-20 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
@@ -479,19 +408,6 @@ const Give = () => {
               <Button variant="outline" size="lg" className="font-bold text-lg px-8 py-6" onClick={() => window.location.href = '/giving-history'}>
                 View Giving History
               </Button>
-            </div>
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-              <button className="hover:text-foreground transition-colors">
-                Contact Finance Team
-              </button>
-              <span className="text-muted-foreground/30">|</span>
-              <button className="hover:text-foreground transition-colors">
-                View Financial Reports
-              </button>
-              <span className="text-muted-foreground/30">|</span>
-              <button className="hover:text-foreground transition-colors">
-                Download Tax Receipt
-              </button>
             </div>
           </div>
         </section>

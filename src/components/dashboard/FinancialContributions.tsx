@@ -39,6 +39,7 @@ const contributionTypes = [
   { value: "building_fund", label: "Building Fund" },
   { value: "community_outreach", label: "Community Outreach" },
   { value: "special_offering", label: "Special Offering" },
+  { value: "sunday_school", label: "Sunday School" },
   { value: "others", label: "Others" },
 ];
 
@@ -124,14 +125,16 @@ export const FinancialContributions = () => {
 
       if (error) throw error;
       setContributions(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading contributions:', error);
+      toast.error("Could not load contributions", { description: error?.message });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const completed = contributions.filter(c => c.transaction_status === 'completed');
+  // Manual/cash entries are recorded by staff, so all non-failed ones count
+  const completed = contributions.filter(c => !['failed', 'cancelled'].includes(c.transaction_status));
 
   // Apply filters to history
   const filteredHistory = completed.filter(c => {
@@ -712,8 +715,13 @@ export const FinancialContributions = () => {
 
               {/* Summary bar */}
               <div className="flex items-center justify-between text-sm px-1">
-                <span className="text-muted-foreground">
-                  Showing <span className="font-semibold text-foreground">{filteredHistory.length}</span> record{filteredHistory.length !== 1 ? 's' : ''}
+                <span className="text-muted-foreground flex items-center gap-2">
+                  Showing <span className="font-semibold text-foreground">{filteredHistory.length}</span> of {completed.length} record{completed.length !== 1 ? 's' : ''}
+                  {(filterType !== "all" || filterDateFrom || filterDateTo || filterSearch) && (
+                    <Button variant="ghost" size="sm" className="h-7" onClick={() => { setFilterType("all"); setFilterDateFrom(""); setFilterDateTo(""); setFilterSearch(""); }}>
+                      Clear filters
+                    </Button>
+                  )}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="font-semibold">Total: {formatAmount(historyTotal)}</span>

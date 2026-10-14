@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -1827,6 +1827,48 @@ export type Database = {
           },
         ]
       }
+      quarterly_reviews: {
+        Row: {
+          completed_at: string
+          created_at: string
+          favorite_space: string
+          id: string
+          metrics_snapshot: Json
+          quarter: string
+          session_duration: string
+          spiritual_theme_word: string | null
+          typical_time_of_day: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          favorite_space: string
+          id?: string
+          metrics_snapshot?: Json
+          quarter: string
+          session_duration: string
+          spiritual_theme_word?: string | null
+          typical_time_of_day: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          favorite_space?: string
+          id?: string
+          metrics_snapshot?: Json
+          quarter?: string
+          session_duration?: string
+          spiritual_theme_word?: string | null
+          typical_time_of_day?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       rate_limit_tracking: {
         Row: {
           created_at: string
@@ -2600,6 +2642,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_journal_entries: {
+        Row: {
+          answered_date: string | null
+          answered_notes: string | null
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_answered: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answered_date?: string | null
+          answered_notes?: string | null
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          is_answered?: boolean
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          answered_date?: string | null
+          answered_notes?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_answered?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_milestones: {
         Row: {
