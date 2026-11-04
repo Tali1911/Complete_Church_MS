@@ -37,8 +37,11 @@ import { Navigation } from "@/components/Navigation";
 import { LiveMarquee } from "@/components/LiveMarquee";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
-import { Suspense, lazy, memo } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense, lazy, memo, useEffect, useState } from "react";
+import { SectionLoader } from "@/components/shared/BrandLoader";
+import { BrandLoader } from "@/components/shared/BrandLoader";
+import { waitPageData } from "@/lib/pageReadiness";
+import { cn } from "@/lib/utils";
 
 // Lazy load non-critical components
 const UpcomingEvents = lazy(() => import("@/components/UpcomingEvents"));
@@ -47,20 +50,30 @@ const ConnectSection = lazy(() => import("@/components/ConnectSection"));
 const GivingSection = lazy(() => import("@/components/GivingSection"));
 
 const ComponentLoader = memo(() => (
-  <div className="py-20">
+  <div className="py-10">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <Skeleton className="h-8 w-64 mx-auto mb-4" />
-      <Skeleton className="h-4 w-96 mx-auto mb-8" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full" />
-        ))}
-      </div>
+      <SectionLoader label="Loading" />
     </div>
   </div>
 ));
 
 const Index = memo(() => {
+  const [dataReady, setDataReady] = useState(false);
+  const [overlayGone, setOverlayGone] = useState(false);
+
+  // Hold the branded loader on screen until the homepage's CMS data (hero,
+  // events, sermons) has actually loaded — or until a safety timeout — so the
+  // page never flashes skeletons or fallback imagery mid-load.
+  useEffect(() => {
+    let alive = true;
+    waitPageData(['hero', 'events', 'sermons'], 8000, 1800).then(() => {
+      if (!alive) return;
+      setDataReady(true);
+      setTimeout(() => { if (alive) setOverlayGone(true); }, 800);
+    });
+    return () => { alive = false; };
+  }, []);
+
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Church",
@@ -80,7 +93,7 @@ const Index = memo(() => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <SEO 
         title="Transforming Lives Through God's Word"
         description="Join TOT Int - A church community focused on transforming lives through God's Word, building faith, and serving our community with love."
@@ -88,30 +101,45 @@ const Index = memo(() => {
         keywords="church, worship, faith, community, TOT International, christian ministry, bible teaching"
         structuredData={organizationSchema}
       />
-      <Navigation />
-      <Hero />
-      <LiveMarquee />
-      <ServiceTimes />
-      <LatestSermon />
-      <Announcements />
-      
-      <Suspense fallback={<ComponentLoader />}>
-        <UpcomingEvents />
-      </Suspense>
-      
-      <Suspense fallback={<ComponentLoader />}>
-        <Testimonials showOnlyFeatured={true} maxItems={3} />
-      </Suspense>
-      
-      <Suspense fallback={<ComponentLoader />}>
-        <ConnectSection />
-      </Suspense>
-      
-      <Suspense fallback={<ComponentLoader />}>
-        <GivingSection />
-      </Suspense>
-      
-      <Footer />
+      <div className={cn("transition-opacity duration-700", dataReady ? "opacity-100" : "opacity-0")}>
+        <Navigation />
+        <Hero />
+        <LiveMarquee />
+        <ServiceTimes />
+        <LatestSermon />
+        <Announcements />
+        
+        <Suspense fallback={<ComponentLoader />}>
+          <UpcomingEvents />
+        </Suspense>
+        
+        <Suspense fallback={<ComponentLoader />}>
+          <Testimonials showOnlyFeatured={true} maxItems={3} />
+        </Suspense>
+        
+        <Suspense fallback={<ComponentLoader />}>
+          <ConnectSection />
+        </Suspense>
+        
+        <Suspense fallback={<ComponentLoader />}>
+          <GivingSection />
+        </Suspense>
+        
+        <Footer />
+      </div>
+
+      {/* Branded splash — stays up until the homepage data is fully loaded */}
+      {!overlayGone && (
+        <div
+          aria-hidden={dataReady}
+          className={cn(
+            "fixed inset-0 z-[80] transition-opacity duration-700",
+            dataReady ? "opacity-0 pointer-events-none" : "opacity-100"
+          )}
+        >
+          <BrandLoader />
+        </div>
+      )}
     </div>
   );
 });
