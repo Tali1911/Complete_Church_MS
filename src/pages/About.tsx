@@ -33,9 +33,12 @@
  * - Flexible beliefs and leadership arrays can be extended
  */
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AboutContent {
@@ -55,14 +58,14 @@ const About = () => {
     hero_title: "ABOUT TOT INTERNATIONAL",
     hero_subtitle: "A ministry committed to raising champions for Christ through sound biblical teaching, authentic worship, and transformational encounters with God.",
     story_title: "Our Story",
-    story_content: "TOT International was founded with a divine vision to raise champions for Christ who will transform nations through the power of God's Word...",
+    story_content: "Established in 2017, Tent of Testimonies Ministries International (TOT) is the principal church ministry within Tushiyah Ministry, a Christian ministry network advancing the Gospel of Jesus Christ.\n\nTOT’s work includes worship, prayer, preaching, evangelism, discipleship, prophetic ministry and biblical teaching. The wider network connects local branches, international fellowships, youth ministries and independent churches under spiritual oversight.\n\nComplementary initiatives extend this work through Christian broadcasting, biblical training and youth development.",
     story_image_url: "",
     vision_text: "To raise champions for Christ who will transform nations through the power of God's Word and the demonstration of His love.",
     mission_text: "To provide sound biblical teaching, authentic worship, and transformational encounters with God that equip believers for victorious living and effective ministry.",
     beliefs: [
-      { title: "The Authority of Scripture", content: "We believe the Bible is the inspired, infallible, and authoritative Word of God..." },
-      { title: "Salvation by Grace", content: "We believe salvation is a gift from God through faith in Jesus Christ..." },
-      { title: "The Power of the Holy Spirit", content: "We believe in the baptism of the Holy Spirit and the operation of spiritual gifts..." }
+      { title: "The Gospel of Jesus Christ", content: "We are committed to advancing the Gospel through preaching, evangelism and ministry." },
+      { title: "Biblical Teaching & Discipleship", content: "We serve through biblical teaching and discipleship, supporting Christian faith and spiritual development." },
+      { title: "Worship, Prayer & Prophetic Ministry", content: "Worship, prayer and prophetic ministry are central areas of the ministry’s service." }
     ],
     leadership: [
       { name: "Pastor Timothy Kitui", position: "Senior Pastor & Founder" },
@@ -71,6 +74,7 @@ const About = () => {
     ]
   });
   const [loading, setLoading] = useState(true);
+  const [storyExpanded, setStoryExpanded] = useState(false);
 
   useEffect(() => {
     fetchAboutContent();
@@ -130,6 +134,20 @@ const About = () => {
     }
   };
 
+  const storyWords = content.story_content.trim().split(/\s+/);
+  const hasMoreStory = storyWords.length > 65;
+  const previewWords = storyWords.slice(0, 65).join(" ");
+  const sentenceEnd = Math.max(
+    previewWords.lastIndexOf(". "),
+    previewWords.lastIndexOf("! "),
+    previewWords.lastIndexOf("? "),
+  );
+  const storyPreview = hasMoreStory
+    ? sentenceEnd >= 0
+      ? previewWords.slice(0, sentenceEnd + 1)
+      : `${previewWords}…`
+    : content.story_content;
+
   return (
     <div className="min-h-screen bg-background">
       <SEO 
@@ -154,46 +172,103 @@ const About = () => {
         </section>
 
         {/* Our Story */}
-        <section className="py-20 bg-card">
+        <section className="py-16 sm:py-20 lg:py-24 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="font-display text-3xl md:text-4xl font-bold text-primary mb-6">{content.story_title}</h2>
-                <div className="text-lg text-muted-foreground whitespace-pre-line">
-                  {content.story_content}
+            <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-16 items-center">
+              <div className="max-w-2xl">
+                <p className="eyebrow mb-4">Established in 2017 · Tushiyah Ministry</p>
+                <h2 className="font-display text-4xl sm:text-5xl font-bold text-primary mb-6">{content.story_title}</h2>
+                <div className="text-base sm:text-lg text-muted-foreground leading-8 whitespace-pre-line">
+                  {storyExpanded ? content.story_content : storyPreview}
                 </div>
+                {hasMoreStory && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="mt-3 h-auto px-0 text-primary"
+                    aria-expanded={storyExpanded}
+                    onClick={() => setStoryExpanded((expanded) => !expanded)}
+                  >
+                    {storyExpanded ? "Read less" : "Read more"}
+                    {storyExpanded ? <ChevronUp aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
+                  </Button>
+                )}
               </div>
-              <div className="h-96 rounded-lg overflow-hidden">
+              <div className="aspect-[4/3] overflow-hidden rounded-md border border-border bg-muted">
                 {content.story_image_url ? (
                   <img 
                     src={content.story_image_url} 
-                    alt="Church Ministry" 
-                    className="w-full h-full object-cover"
+                    alt="Tent of Testimonies Ministries International"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="bg-lavender h-full flex items-center justify-center">
-                    <p className="text-muted-foreground">Church Ministry Photo</p>
+                  <div className="relative flex h-full flex-col justify-between overflow-hidden bg-gradient-plum p-7 sm:p-10 text-primary-foreground">
+                    <span className="eyebrow text-accent">Our ministry</span>
+                    <span aria-hidden="true" className="absolute -right-3 top-1/2 -translate-y-1/2 font-display text-[12rem] font-bold leading-none text-primary-foreground/10 sm:text-[16rem]">TOT</span>
+                    <div className="relative z-10">
+                      <p className="font-display text-3xl sm:text-4xl font-bold">Tent of Testimonies</p>
+                      <p className="mt-3 max-w-sm text-sm sm:text-base text-primary-foreground/80">The Home of Supernatural Divine Solutions</p>
+                      <p className="mt-8 text-sm font-semibold text-accent">Established 2017</p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
+
+            <div className="mt-14 border-y border-border py-8 sm:py-10">
+              <div className="grid gap-7 sm:grid-cols-3 sm:gap-4">
+                <div className="sm:border-r sm:border-border sm:pr-5">
+                  <p className="font-display text-4xl font-bold text-primary">18</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">Church branches</p>
+                </div>
+                <div className="sm:border-r sm:border-border sm:px-5">
+                  <p className="font-display text-4xl font-bold text-primary">6</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">Countries with branches</p>
+                </div>
+                <div className="sm:pl-5">
+                  <p className="font-display text-4xl font-bold text-primary">5</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">International fellowship locations</p>
+                </div>
+              </div>
+              <p className="mt-5 text-sm leading-6 text-muted-foreground">Fellowships are identified in Sierra Leone, Europe, Canada, the United States and the Middle East.</p>
+            </div>
+
+            <div className="mt-10 flex flex-col gap-6 border-l-4 border-accent bg-secondary/40 px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <div className="flex gap-4">
+                <MapPin className="mt-1 h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+                <div>
+                  <h3 className="font-display text-2xl font-bold text-primary">Plan Your Visit</h3>
+                  <p className="mt-1 text-muted-foreground">Find campus locations and service times.</p>
+                </div>
+              </div>
+              <Button asChild size="lg" className="shrink-0">
+                <Link to="/visit-us">
+                  Explore locations & times
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            </div>
+
           </div>
         </section>
 
         {/* Our Beliefs */}
-        <section className="py-20 bg-lavender">
+        <section className="py-16 sm:py-20 lg:py-24 bg-primary text-primary-foreground">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-primary mb-4">What We Believe</h2>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                Our faith is anchored on the unchanging Word of God and the transformative power of Jesus Christ.
+            <div className="mb-10 max-w-3xl">
+              <p className="eyebrow mb-4">Our foundation</p>
+              <h2 className="font-display text-4xl sm:text-5xl font-bold mb-4">What We Believe</h2>
+              <p className="text-base sm:text-lg leading-8 text-primary-foreground/80">
+                Our faith is expressed through the ministry’s commitments: advancing the Gospel, serving through prayer and worship, and growing through biblical teaching and discipleship.
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
               {content.beliefs.map((belief, index) => (
-                <div key={index} className="text-center">
-                  <h3 className="text-xl font-bold text-primary mb-4">{belief.title}</h3>
-                  <p className="text-muted-foreground">{belief.content}</p>
+                <div key={index} className="rounded-md border border-primary-foreground/15 bg-primary-foreground/5 p-6 sm:p-8">
+                  <p className="mb-8 text-sm font-bold text-accent">0{index + 1}</p>
+                  <div className="mb-5 h-px w-12 bg-accent" />
+                  <h3 className="font-display text-xl sm:text-2xl font-bold leading-snug">{belief.title}</h3>
+                  <p className="mt-4 text-sm sm:text-base leading-7 text-primary-foreground/75">{belief.content}</p>
                 </div>
               ))}
             </div>
